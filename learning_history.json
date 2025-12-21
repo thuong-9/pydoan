@@ -1,0 +1,922 @@
+[
+    {
+        "timestamp": "2025-12-21 08:16:23",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "this is the pillow",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:23",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "this is the pillow",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:23",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "this is the pillow",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:24",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "this is the pillow",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:24",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "i sleep in bed",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:24",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "i sleep in bed",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:24",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "i sleep in bed",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:24",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "i sleep in bed",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:26",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "i sleep in bed",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:39",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "I sleep on the bed.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:51",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "I wake up",
+        "score": 93,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:16:55",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "I wake up",
+        "score": 93,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:17:27",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "village is",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:17:54",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "the village is peaceful",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:18:06",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "The village is peaceful",
+        "score": 99,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:18:11",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "The village is peaceful.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:18:30",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "kk",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:18:48",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "There is a river.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:19:00",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "cầu gân",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:19:17",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "the bridge is ne",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:19:27",
+        "mode": "Grammar",
+        "question": "Viết câu (ngữ pháp)",
+        "user_answer": "the bridge is near the road",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:19:46",
+        "mode": "Writing",
+        "question": "Viết từ: River",
+        "user_answer": "river",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:25:25",
+        "mode": "Speaking",
+        "question": "Đọc từ: Bed",
+        "user_answer": "map",
+        "score": 31,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:25:32",
+        "mode": "Speaking",
+        "question": "Đọc từ: Bed",
+        "user_answer": "Mac",
+        "score": 29,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:25:37",
+        "mode": "Speaking",
+        "question": "Đọc từ: Bed",
+        "user_answer": "map",
+        "score": 31,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:25:42",
+        "mode": "Speaking",
+        "question": "Đọc từ: Bed",
+        "user_answer": "map",
+        "score": 31,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:25:56",
+        "mode": "Speaking",
+        "question": "Đọc từ: Lamp",
+        "user_answer": "lamb",
+        "score": 26,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:26:01",
+        "mode": "Speaking",
+        "question": "Đọc từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:26:08",
+        "mode": "Speaking",
+        "question": "Đọc từ: Pillow",
+        "user_answer": "Halo",
+        "score": 25,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:26:17",
+        "mode": "Speaking",
+        "question": "Đọc từ: Pillow",
+        "user_answer": "pillow",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:26:24",
+        "mode": "Speaking",
+        "question": "Đọc từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:26:32",
+        "mode": "Speaking",
+        "question": "Đọc từ: Wake up",
+        "user_answer": "wake up",
+        "score": 99,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:26:50",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wake up",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:49:12",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:49:25",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:49:27",
+        "mode": "Quiz",
+        "question": "Đáp án đúng: Ngủ",
+        "user_answer": "Chạy",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:49:28",
+        "mode": "Quiz",
+        "question": "Đáp án đúng: Blanket",
+        "user_answer": "Lamp",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 08:49:52",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 08:50:00",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:16",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:21",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:26",
+        "mode": "Writing",
+        "question": "Viết từ: Pillow",
+        "user_answer": "pillow",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:30",
+        "mode": "Writing",
+        "question": "Viết từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:31",
+        "mode": "Writing",
+        "question": "Viết từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:46",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "pila",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:46",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "pila",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:46",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "pila",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:46",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "pila",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 09:04:55",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wake up",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:05:02",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:05:05",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Ngủ",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:05:09",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Blanket",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:23:20",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "this is the pillow",
+        "score": 90,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:23:21",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "this is the pillow",
+        "score": 90,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:23:21",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "this is the pillow",
+        "score": 90,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:23:21",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "this is the pillow",
+        "score": 90,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:29:11",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "this is the pillow",
+        "score": 90,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:29:25",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I sleep on the bed",
+        "score": 98,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:29:38",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:36:30",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:36:34",
+        "mode": "Writing",
+        "question": "Viết từ: Pillow",
+        "user_answer": "pillow",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:36:39",
+        "mode": "Writing",
+        "question": "Viết từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:36:50",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "blanket",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:36:57",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wakeup",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 09:37:01",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wake up",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 09:37:11",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I wake up on the bed",
+        "score": 80,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:08:44",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I wake up",
+        "score": 93,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:11:53",
+        "mode": "Speaking",
+        "question": "Đọc từ: Table",
+        "user_answer": "table",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:12:19",
+        "mode": "Speaking",
+        "question": "Đọc từ: Spoon",
+        "user_answer": "the Boom",
+        "score": 15,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:12:50",
+        "mode": "Speaking",
+        "question": "Đọc từ: Spoon",
+        "user_answer": "Supreme",
+        "score": 15,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:13:16",
+        "mode": "Writing",
+        "question": "Viết từ: Spoon",
+        "user_answer": "table",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:13:33",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:13:44",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:13:50",
+        "mode": "Writing",
+        "question": "Viết từ: Pillow",
+        "user_answer": "pillow",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:13:56",
+        "mode": "Writing",
+        "question": "Viết từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:14:07",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "blanker",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:14:11",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "blanket",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:14:18",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wake up",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:14:39",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "This is the pillow.",
+        "score": 92,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:14:49",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "This is the a pillow.",
+        "score": 97,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:14:58",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "This is a pillow.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:15:13",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I sleep on the bed.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:15:21",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I wake up.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:15:50",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:15:52",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Ngủ",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:15:54",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Blanket",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:16:57",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:17:04",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:17:06",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:17:10",
+        "mode": "Writing",
+        "question": "Viết từ: Pillow",
+        "user_answer": "pillow",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:27:43",
+        "mode": "Writing",
+        "question": "Viết từ: Bed",
+        "user_answer": "bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:27:51",
+        "mode": "Writing",
+        "question": "Viết từ: Lamp",
+        "user_answer": "lamp",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:27:56",
+        "mode": "Writing",
+        "question": "Viết từ: Pillow",
+        "user_answer": "pillow",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:02",
+        "mode": "Writing",
+        "question": "Viết từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:10",
+        "mode": "Writing",
+        "question": "Viết từ: Sleep",
+        "user_answer": "sleep",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:18",
+        "mode": "Writing",
+        "question": "Viết từ: Blanket",
+        "user_answer": "blanket",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:24",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wake up",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:25",
+        "mode": "Writing",
+        "question": "Viết từ: Wake up",
+        "user_answer": "wake up",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:54",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "This is a pillow.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:28:57",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "This is a pillow.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:12",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I sleep on the bed.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:16",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "iê",
+        "score": 12,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:38",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "I wake up.",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:48",
+        "mode": "Quiz",
+        "question": "Đáp án đúng: Bed",
+        "user_answer": "Table",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:50",
+        "mode": "Quiz",
+        "question": "Đáp án đúng: Ngủ",
+        "user_answer": "Ăn",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:51",
+        "mode": "Quiz",
+        "question": "Đáp án đúng: Blanket",
+        "user_answer": "Pillow",
+        "score": 0,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-21 21:29:58",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Bed",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:30:00",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Ngủ",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:30:02",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Blanket",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:32:07",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Spoon",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:32:10",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Cup",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:32:13",
+        "mode": "Quiz",
+        "question": "Đáp án đúng là gì?",
+        "user_answer": "Fork",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:32:24",
+        "mode": "Writing",
+        "question": "Viết từ: Table",
+        "user_answer": "table",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:32:30",
+        "mode": "Writing",
+        "question": "Viết từ: Spoon",
+        "user_answer": "spoon",
+        "score": 100,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-21 21:32:51",
+        "mode": "Grammar",
+        "question": "Viết câu",
+        "user_answer": "This is a spoon.",
+        "score": 100,
+        "result": "Đúng"
+    }
+]
