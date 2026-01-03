@@ -5,55 +5,215 @@ import re
 import io
 import json
 import os
-import language_tool_python
-# from difflib import SequenceMatcher
-from sentence_transformers import SentenceTransformer, util
+import threading
+from difflib import SequenceMatcher
 from datetime import datetime
+import urllib.request
+import urllib.parse
+import random
 
 app = Flask(__name__)
 app.secret_key = 'robo_english_super_secret'
 
 translator = Translator()
-print("Đang tải mô hình Transformers AI... Vui lòng đợi...")
-ai_model = SentenceTransformer('all-MiniLM-L6-v2')
-print("Đã tải xong mô hình!")
+
+# --- TỐI ƯU STARTUP ---
+# Tránh load mô hình AI/LanguageTool ngay khi import module (startup sẽ rất chậm).
+# Thay vào đó, lazy-load khi endpoint cần.
+_ai_lock = threading.Lock()
+ai_model = None
+_st_util = None
+
+_grammar_lock = threading.Lock()
 grammar_tool = None
-try:
-    grammar_tool = language_tool_python.LanguageTool('en-US')
-    print("✅ Đã tải xong LanguageTool!")
-except ModuleNotFoundError as exc:
-    # Không chặn app nếu máy chưa có Java; chỉ bỏ qua kiểm tra ngữ pháp nâng cao
-    print("⚠️ Không tải được LanguageTool (cần Java). Bỏ qua kiểm tra ngữ pháp nâng cao.")
-    print(f"Chi tiết: {exc}")
+_grammar_initialized = False
+
+
+def _get_ai_model_and_util():
+    """Trả về (ai_model, util) của sentence-transformers. Lazy-load để app khởi động nhanh."""
+    global ai_model, _st_util
+    if ai_model is not None and _st_util is not None:
+        return ai_model, _st_util
+
+    with _ai_lock:
+        if ai_model is None or _st_util is None:
+            # Import nặng (torch/sentence-transformers) -> để bên trong.
+            from sentence_transformers import SentenceTransformer, util as st_util
+
+            model_name = os.getenv('ROBO_ST_MODEL', 'all-MiniLM-L6-v2')
+            print(f"⏳ Đang tải mô hình AI: {model_name}...")
+            ai_model = SentenceTransformer(model_name)
+            _st_util = st_util
+            print("✅ Đã tải xong mô hình AI!")
+
+    return ai_model, _st_util
+
+
+def _get_grammar_tool():
+    """Lazy-load LanguageTool (cần Java). Nếu không khả dụng thì trả về None."""
+    global grammar_tool, _grammar_initialized
+    if _grammar_initialized:
+        return grammar_tool
+
+    with _grammar_lock:
+        if not _grammar_initialized:
+            try:
+                import language_tool_python
+
+                grammar_tool = language_tool_python.LanguageTool('en-US')
+                print("✅ Đã tải xong LanguageTool!")
+            except Exception as exc:
+                # Không chặn app nếu máy chưa có Java hoặc bị lỗi tải.
+                grammar_tool = None
+                print("⚠️ Không tải được LanguageTool. Bỏ qua kiểm tra ngữ pháp nâng cao.")
+                print(f"Chi tiết: {exc}")
+            finally:
+                _grammar_initialized = True
+
+    return grammar_tool
 
 HISTORY_FILE = 'learning_history.json'
 
-def save_to_history(mode, question, user_ans, score, is_correct):
-    """Hàm lưu kết quả học tập vào file JSON"""
+# Cache phiên âm (tránh gọi API liên tục)
+PHONETIC_CACHE = {}
+
+def _load_history():
+    if not os.path.exists(HISTORY_FILE):
+        return []
+    try:
+        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def _write_history(history):
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=4)
+
+
+def _normalize_key(value):
+    if value is None:
+        return ''
+    return str(value).strip().lower()
+
+
+def _has_been_correct_before(question_id=None, mode=None, question=None):
+    """Trả về True nếu câu này đã từng được trả lời ĐÚNG trước đó."""
+    qid = _normalize_key(question_id)
+    m = _normalize_key(mode)
+    q = _normalize_key(question)
+    history = _load_history()
+    for rec in history:
+        if not isinstance(rec, dict):
+            continue
+
+        rec_result = rec.get('result')
+        if rec_result != 'Đúng':
+            continue
+
+        rec_qid = _normalize_key(rec.get('question_id'))
+        if qid and rec_qid and rec_qid == qid:
+            return True
+
+        # Fallback cho dữ liệu cũ chưa có question_id
+        if not qid:
+            if m and _normalize_key(rec.get('mode')) != m:
+                continue
+            if q and _normalize_key(rec.get('question')) != q:
+                continue
+            if m or q:
+                return True
+
+    return False
+
+
+def save_to_history(mode, question, user_ans, score, is_correct, *, question_id=None, base_score=None, counted=None, context=None):
+    """Hàm lưu kết quả học tập vào file JSON
+
+    Quy ước mới:
+    - score: điểm được TÍNH (0 nếu câu đã đúng trước đó)
+    - base_score: điểm thô/AI chấm (để hiển thị, không nhất thiết được tính)
+    - counted: True/False nếu lần này có tính điểm
+    - question_id: khóa định danh ổn định cho 1 câu hỏi
+    - context: thông tin ngữ cảnh (grade/topic/category/item)
+    """
     record = {
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "mode": mode,
         "question": question,
+        "question_id": question_id,
+        "context": context,
         "user_answer": user_ans,
         "score": score,
-        "result": "Đúng" if is_correct else "Sai"
+        "base_score": base_score,
+        "counted": counted,
+        "result": "Đúng" if is_correct else "Sai",
     }
 
-    # Đọc dữ liệu cũ
-    history = []
-    if os.path.exists(HISTORY_FILE):
-        try:
-            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                history = json.load(f)
-        except:
-            history = []
-
-    # Thêm dữ liệu mới
+    history = _load_history()
     history.append(record)
+    _write_history(history)
 
-    # Ghi lại vào file
-    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-        json.dump(history, f, ensure_ascii=False, indent=4)
+
+def _fetch_phonetic_from_dictionary_api(word: str):
+    """Lấy phiên âm/IPA từ dictionaryapi.dev. Trả về chuỗi hoặc '' nếu không có."""
+    if not word:
+        return ''
+
+    # API này thường không hỗ trợ cụm từ; thử nguyên cụm trước, nếu fail thì thử từ đầu
+    candidates = [word.strip(), word.strip().split(' ')[0]]
+    for w in candidates:
+        w = w.strip()
+        if not w:
+            continue
+        try:
+            url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{urllib.parse.quote(w)}"
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                raw = resp.read().decode('utf-8', errors='ignore')
+            data = json.loads(raw)
+            if not isinstance(data, list) or not data:
+                continue
+
+            entry = data[0] if isinstance(data[0], dict) else None
+            if not entry:
+                continue
+
+            # Ưu tiên field 'phonetic'
+            phonetic = entry.get('phonetic')
+            if isinstance(phonetic, str) and phonetic.strip():
+                return phonetic.strip()
+
+            # Nếu không có, thử trong phonetics[]
+            phonetics = entry.get('phonetics')
+            if isinstance(phonetics, list):
+                for p in phonetics:
+                    if not isinstance(p, dict):
+                        continue
+                    text = p.get('text')
+                    if isinstance(text, str) and text.strip():
+                        return text.strip()
+        except Exception:
+            continue
+
+    return ''
+
+
+@app.route('/api/phonetic')
+def phonetic_api():
+    word = request.args.get('word', '')
+    word = str(word).strip()
+    if not word:
+        return jsonify({"phonetic": ""})
+
+    key = _normalize_key(word)
+    if key in PHONETIC_CACHE:
+        return jsonify({"phonetic": PHONETIC_CACHE[key]})
+
+    phonetic = _fetch_phonetic_from_dictionary_api(word)
+    PHONETIC_CACHE[key] = phonetic
+    return jsonify({"phonetic": phonetic})
 # --- 1. CƠ SỞ DỮ LIỆU GIÁO TRÌNH (ĐÃ CẬP NHẬT ĐỦ 5 LỚP) ---
 CURRICULUM = {
     "lop1": {
@@ -613,13 +773,15 @@ def calculate_ai_score(user_text, correct_text):
     Trả về điểm số từ 0 đến 100.
     """
     if not user_text: return 0
+
+    model, st_util = _get_ai_model_and_util()
     
     # Mã hóa văn bản thành vector
-    embeddings1 = ai_model.encode(user_text, convert_to_tensor=True)
-    embeddings2 = ai_model.encode(correct_text, convert_to_tensor=True)
+    embeddings1 = model.encode(user_text, convert_to_tensor=True)
+    embeddings2 = model.encode(correct_text, convert_to_tensor=True)
     
     # Tính độ tương đồng cosine
-    cosine_score = util.cos_sim(embeddings1, embeddings2)
+    cosine_score = st_util.cos_sim(embeddings1, embeddings2)
     
     # Chuyển thành thang điểm 100
     score = float(cosine_score[0][0]) * 100
@@ -667,50 +829,47 @@ def check_answer():
     user_ans = data.get('user_answer', '').strip()
     correct_ans = data.get('correct_answer', '').strip()
 
+    context = data.get('context') if isinstance(data, dict) else None
+    if not isinstance(context, dict):
+        context = {}
+
+    # question_text giúp định danh quiz theo đúng "câu hỏi" (không chỉ theo đáp án)
+    question_text = data.get('question_text', '') if isinstance(data, dict) else ''
+    question_text = str(question_text).strip()
+
+    def make_question_id(default_label: str):
+        grade_id = _normalize_key(context.get('gradeId'))
+        topic_id = _normalize_key(context.get('topicId'))
+        category = _normalize_key(context.get('category'))
+        item_id = _normalize_key(context.get('itemId'))
+        label = _normalize_key(default_label)
+
+        parts = [
+            _normalize_key(mode),
+            grade_id,
+            topic_id,
+            category,
+            item_id,
+            label,
+        ]
+        return "::".join([p for p in parts if p])
+
     result = {
         "is_correct": False, 
         "score": 0, 
         "message": "", 
-        "suggestion": "" # Gợi ý sửa lỗi
+        "suggestion": "", # Gợi ý sửa lỗi
+        "awarded_score": 0,
+        "already_correct": False,
     }
-
-    # if mode == 'speaking':
-    #     # Tính điểm 0-100
-    #     # similarity = check_similarity(user_ans, correct_ans)
-    #     # score = int(similarity * 100)
-    #     score = calculate_ai_score(user_ans, correct_ans)
-    #     result['score'] = score
-        
-    #     if score >= 85:
-    #         result.update({"is_correct": True, "message": f"Tuyệt vời! ({score}/100) 🌟"})
-    #     elif score >= 50:
-    #         result.update({"is_correct": False, "message": f"Khá tốt, thử lại nhé ({score}/100) 💪"})
-    #         result["suggestion"] = f"Bé nói: '{user_ans}' <br> Chuẩn là: '{correct_ans}'"
-    #     else:
-    #         result.update({"is_correct": False, "message": f"Chưa chính xác ({score}/100) 😅"})
-    #         result["suggestion"] = f"Bé nói: '{user_ans}' <br> Chuẩn là: '{correct_ans}'"
-
-    # elif mode == 'writing':
-    #     if user_ans.lower() == correct_ans.lower():
-    #         result.update({"is_correct": True, "score": 100, "message": "Chính xác! Bé viết rất giỏi."})
-    #     else:
-    #         result["message"] = f"Sai rồi. Đáp án đúng là: {correct_ans}"
-            
-    # elif mode == 'quiz':
-    #     if user_ans == correct_ans:
-    #         result.update({"is_correct": True, "score": 100, "message": "Đúng rồi! 🎉"})
-    #     else:
-    #         result["message"] = "Tiếc quá, sai mất rồi!"
-
-    # return jsonify(result)
-    # 1. CHẾ ĐỘ NÓI (SPEAKING) - Dùng Transformers AI
     if mode == 'speaking':
         if not user_ans:
             score = 0
         else:
-            embeddings1 = ai_model.encode(user_ans, convert_to_tensor=True)
-            embeddings2 = ai_model.encode(correct_ans, convert_to_tensor=True)
-            cosine_score = util.cos_sim(embeddings1, embeddings2)
+            model, st_util = _get_ai_model_and_util()
+            embeddings1 = model.encode(user_ans, convert_to_tensor=True)
+            embeddings2 = model.encode(correct_ans, convert_to_tensor=True)
+            cosine_score = st_util.cos_sim(embeddings1, embeddings2)
             score = int(float(cosine_score[0][0]) * 100)
         
         result['score'] = score
@@ -723,20 +882,65 @@ def check_answer():
             result.update({"is_correct": False, "message": f"Chưa chính xác ({score}/100) 😅"})
             result["suggestion"] = f"Bé nói: '{user_ans}' <br> Chuẩn là: '{correct_ans}'"
 
-        # Lưu lịch sử
-        save_to_history("Speaking", f"Đọc từ: {correct_ans}", user_ans, score, result['is_correct'])
+        question_label = f"Đọc từ: {correct_ans}"
+        question_id = make_question_id(correct_ans)
+        already_correct = _has_been_correct_before(question_id=question_id)
+        result['already_correct'] = already_correct
+
+        awarded_score = 0
+        if result['is_correct'] and not already_correct:
+            awarded_score = score
+        result['awarded_score'] = awarded_score
+
+        if result['is_correct'] and already_correct:
+            result['message'] = f"Đúng rồi! (AI chấm: {score}/100) ✅<br><small>Nhưng câu này bé đã làm đúng trước đó nên không cộng điểm nữa.</small>"
+
+        save_to_history(
+            "Speaking",
+            question_label,
+            user_ans,
+            awarded_score,
+            result['is_correct'],
+            question_id=question_id,
+            base_score=score,
+            counted=(result['is_correct'] and not already_correct),
+            context=context,
+        )
 
     # 2. CHẾ ĐỘ VIẾT (WRITING) - Dùng LanguageTool (Ngữ pháp nâng cao)
     elif mode == 'writing':
         # Kiểm tra chính xác 100% trước
         if user_ans.lower() == correct_ans.lower():
-            result.update({"is_correct": True, "score": 100, "message": "Chính xác tuyệt đối! 💯"})
-            save_to_history("Writing", f"Viết từ: {correct_ans}", user_ans, 100, True)
+            base_score = 100
+            result.update({"is_correct": True, "score": base_score, "message": "Chính xác tuyệt đối! 💯"})
+
+            question_label = f"Viết từ: {correct_ans}"
+            question_id = make_question_id(correct_ans)
+            already_correct = _has_been_correct_before(question_id=question_id)
+            result['already_correct'] = already_correct
+
+            awarded_score = 0 if already_correct else base_score
+            result['awarded_score'] = awarded_score
+            if already_correct:
+                result['message'] = "Đúng rồi! ✅ Nhưng câu này bé đã đúng trước đó nên không cộng điểm nữa."
+
+            save_to_history(
+                "Writing",
+                question_label,
+                user_ans,
+                awarded_score,
+                True,
+                question_id=question_id,
+                base_score=base_score,
+                counted=(not already_correct),
+                context=context,
+            )
         else:
             # Nếu sai, dùng LanguageTool kiểm tra lỗi ngữ pháp/chính tả
             matches = []
-            if grammar_tool is not None:
-                matches = grammar_tool.check(user_ans)
+            tool = _get_grammar_tool()
+            if tool is not None:
+                matches = tool.check(user_ans)
             
             if len(matches) > 0:
                 # Có lỗi ngữ pháp cụ thể
@@ -750,8 +954,23 @@ def check_answer():
                 # Không phải lỗi ngữ pháp, chỉ là sai từ vựng
                 result["message"] = f"Sai rồi. Đáp án đúng là: {correct_ans}"
                 result["score"] = 0
-            
-            save_to_history("Writing", f"Viết từ: {correct_ans}", user_ans, 0, False)
+
+            question_label = f"Viết từ: {correct_ans}"
+            question_id = make_question_id(correct_ans)
+            result['awarded_score'] = 0
+            result['already_correct'] = _has_been_correct_before(question_id=question_id)
+
+            save_to_history(
+                "Writing",
+                question_label,
+                user_ans,
+                0,
+                False,
+                question_id=question_id,
+                base_score=0,
+                counted=False,
+                context=context,
+            )
 
     # 2b. CHẾ ĐỘ VIẾT CÂU (GRAMMAR) - Dùng AI + (tuỳ chọn) LanguageTool
     elif mode == 'grammar':
@@ -759,17 +978,19 @@ def check_answer():
         if not user_ans:
             score = 0
         else:
-            embeddings1 = ai_model.encode(user_ans, convert_to_tensor=True)
-            embeddings2 = ai_model.encode(correct_ans, convert_to_tensor=True)
-            cosine_score = util.cos_sim(embeddings1, embeddings2)
+            model, st_util = _get_ai_model_and_util()
+            embeddings1 = model.encode(user_ans, convert_to_tensor=True)
+            embeddings2 = model.encode(correct_ans, convert_to_tensor=True)
+            cosine_score = st_util.cos_sim(embeddings1, embeddings2)
             score = int(float(cosine_score[0][0]) * 100)
 
         result['score'] = score
 
         # Gợi ý lỗi ngữ pháp nếu có Java/LanguageTool
-        if grammar_tool is not None and user_ans:
+        tool = _get_grammar_tool()
+        if tool is not None and user_ans:
             try:
-                matches = grammar_tool.check(user_ans)
+                matches = tool.check(user_ans)
                 if len(matches) > 0:
                     error_msg = matches[0].message
                     suggestion = matches[0].replacements[0] if matches[0].replacements else ""
@@ -791,16 +1012,75 @@ def check_answer():
             if not result.get('suggestion'):
                 result["suggestion"] = f"Gợi ý câu mẫu: '{correct_ans}'"
 
-        save_to_history("Grammar", "Viết câu", user_ans, score, result['is_correct'])
+        question_label = f"Viết câu: {correct_ans}" if correct_ans else "Viết câu"
+        question_id = make_question_id(correct_ans or question_text or "grammar")
+        already_correct = _has_been_correct_before(question_id=question_id)
+        result['already_correct'] = already_correct
+
+        awarded_score = 0
+        if result['is_correct'] and not already_correct:
+            awarded_score = score
+        result['awarded_score'] = awarded_score
+
+        if result['is_correct'] and already_correct:
+            result['message'] = f"Đúng rồi! ({score}/100) ✅ Nhưng câu này bé đã làm đúng trước đó nên không cộng điểm nữa."
+
+        save_to_history(
+            "Grammar",
+            question_label,
+            user_ans,
+            awarded_score,
+            result['is_correct'],
+            question_id=question_id,
+            base_score=score,
+            counted=(result['is_correct'] and not already_correct),
+            context=context,
+        )
 
     # 3. CHẾ ĐỘ TRẮC NGHIỆM (QUIZ)
     elif mode == 'quiz':
+        question_label = f"Câu hỏi: {question_text}" if question_text else "Câu hỏi trắc nghiệm"
+        question_id_seed = question_text or correct_ans or "quiz"
+        question_id = make_question_id(question_id_seed)
+
         if user_ans == correct_ans:
-            result.update({"is_correct": True, "score": 100, "message": "Đúng rồi! 🎉"})
-            save_to_history("Quiz", f"Đáp án đúng là gì?", user_ans, 100, True)
+            base_score = 100
+            already_correct = _has_been_correct_before(question_id=question_id)
+            result['already_correct'] = already_correct
+
+            awarded_score = 0 if already_correct else base_score
+            result.update({"is_correct": True, "score": base_score, "awarded_score": awarded_score})
+            if already_correct:
+                result['message'] = "Đúng rồi! ✅ Nhưng câu này bé đã đúng trước đó nên không cộng điểm nữa."
+            else:
+                result['message'] = "Đúng rồi! 🎉"
+
+            save_to_history(
+                "Quiz",
+                question_label,
+                user_ans,
+                awarded_score,
+                True,
+                question_id=question_id,
+                base_score=base_score,
+                counted=(not already_correct),
+                context=context,
+            )
         else:
             result["message"] = "Tiếc quá, sai mất rồi!"
-            save_to_history("Quiz", f"Đáp án đúng: {correct_ans}", user_ans, 0, False)
+            result['awarded_score'] = 0
+            result['already_correct'] = _has_been_correct_before(question_id=question_id)
+            save_to_history(
+                "Quiz",
+                question_label,
+                user_ans,
+                0,
+                False,
+                question_id=question_id,
+                base_score=0,
+                counted=False,
+                context=context,
+            )
 
     return jsonify(result)
 
@@ -812,6 +1092,9 @@ BOT_MEMORY = {
     "hi": "Hi there!",
     "xin chào": "Chào bé ngoan!"
 }
+
+# Lưu trạng thái hội thoại đơn giản theo client_id (frontend tạo và gửi lên)
+CHAT_SESSIONS = {}
 
 # Từ điển cứng để sửa lỗi ngữ pháp các câu ngắn
 FIXED_TRANSLATIONS = {
@@ -842,62 +1125,374 @@ def perform_translation(text, dest_lang):
     except Exception as e:
         return "Lỗi kết nối server dịch."
 
+
+def _get_topic_safe(grade_id: str, topic_id: str):
+    try:
+        grade = CURRICULUM.get(grade_id)
+        if not isinstance(grade, dict):
+            return None
+        topics = grade.get('topics')
+        if not isinstance(topics, dict):
+            return None
+        topic = topics.get(topic_id)
+        if not isinstance(topic, dict):
+            return None
+        return topic
+    except Exception:
+        return None
+
+
+def _normalize_en_answer(text: str) -> str:
+    text = '' if text is None else str(text)
+    text = text.strip().lower()
+    # Giữ chữ cái, số và khoảng trắng; loại ký tự lạ
+    text = re.sub(r"[^a-z0-9\s']", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _similarity(a: str, b: str) -> float:
+    a = _normalize_en_answer(a)
+    b = _normalize_en_answer(b)
+    if not a or not b:
+        return 0.0
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def _get_or_create_chat_session(client_id: str) -> dict:
+    key = _normalize_key(client_id)
+    if not key:
+        key = 'anonymous'
+    sess = CHAT_SESSIONS.get(key)
+    if not isinstance(sess, dict):
+        sess = {
+            'pending': None,  # {'type': 'vocab'|'grammar'|'pronounce', ...}
+            'gradeId': None,
+            'topicId': None,
+            'updated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        CHAT_SESSIONS[key] = sess
+    sess['updated_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return sess
+
+
+def _default_chat_actions():
+    return [
+        {'action': 'start_vocab', 'label': 'Luyện từ vựng'},
+        {'action': 'start_grammar', 'label': 'Luyện ngữ pháp'},
+        {'action': 'start_pronounce', 'label': 'Luyện phát âm'},
+    ]
+
+
+def _pick_vocab_question(topic: dict):
+    vocab = topic.get('vocab') if isinstance(topic, dict) else None
+    if not isinstance(vocab, list) or not vocab:
+        return None
+    idx = random.randint(0, len(vocab) - 1)
+    item = vocab[idx] if isinstance(vocab[idx], dict) else None
+    if not item or not item.get('en') or not item.get('vi'):
+        return None
+    return {
+        'type': 'vocab',
+        'vocabIndex': idx,
+        'en': str(item.get('en')).strip(),
+        'vi': str(item.get('vi')).strip(),
+    }
+
+
+def _pick_grammar_question(topic: dict):
+    grammar = topic.get('grammar') if isinstance(topic, dict) else None
+    if not isinstance(grammar, list) or not grammar:
+        return None
+    idx = random.randint(0, len(grammar) - 1)
+    item = grammar[idx] if isinstance(grammar[idx], dict) else None
+    if not item or not item.get('prompt_vi') or not item.get('answer'):
+        return None
+    return {
+        'type': 'grammar',
+        'grammarIndex': idx,
+        'prompt_vi': str(item.get('prompt_vi')).strip(),
+        'answer': str(item.get('answer')).strip(),
+    }
+
+
+def _score_grammar_like_check_api(user_ans: str, correct_ans: str):
+    user_ans = (user_ans or '').strip()
+    correct_ans = (correct_ans or '').strip()
+    if not user_ans or not correct_ans:
+        return {
+            'score': 0,
+            'is_correct': False,
+            'message': 'Bé thử viết câu tiếng Anh nhé!',
+            'suggestion': f"Gợi ý mẫu: <b>{correct_ans}</b>" if correct_ans else ''
+        }
+
+    model, st_util = _get_ai_model_and_util()
+    embeddings1 = model.encode(user_ans, convert_to_tensor=True)
+    embeddings2 = model.encode(correct_ans, convert_to_tensor=True)
+    cosine_score = st_util.cos_sim(embeddings1, embeddings2)
+    score = int(float(cosine_score[0][0]) * 100)
+
+    suggestion = ''
+    tool = _get_grammar_tool()
+    if tool is not None:
+        try:
+            matches = tool.check(user_ans)
+            if matches:
+                m = matches[0]
+                repl = (m.replacements[0] if m.replacements else '')
+                suggestion = f"Lỗi gợi ý: {m.message}." + (f" <br>Gợi ý sửa: <b>{repl}</b>" if repl else '')
+        except Exception:
+            pass
+
+    if score >= 85:
+        return {'score': score, 'is_correct': True, 'message': f"Rất tốt! ({score}/100) ✅", 'suggestion': suggestion}
+    if score >= 60:
+        return {
+            'score': score,
+            'is_correct': False,
+            'message': f"Gần đúng rồi! ({score}/100)",
+            'suggestion': (suggestion + ("<br>" if suggestion else "") + f"Mẫu đúng: <b>{correct_ans}</b>")
+        }
+    return {
+        'score': score,
+        'is_correct': False,
+        'message': f"Chưa đúng lắm ({score}/100). Bé thử lại nhé!",
+        'suggestion': (suggestion + ("<br>" if suggestion else "") + f"Mẫu đúng: <b>{correct_ans}</b>")
+    }
+
 @app.route('/api/chat', methods=['POST'])
 def chat_bot():
-    data = request.json
-    raw_msg = data.get('message', '').strip()
-    
-    if raw_msg.lower() in BOT_MEMORY:
-        return jsonify({"reply": BOT_MEMORY[raw_msg.lower()]})
-    
-    clean_text = clean_input(raw_msg)
-    if not clean_text:
-        return jsonify({"reply": "Bé muốn dịch từ gì? Gõ 'Dịch [từ]' nhé!"})
+    data = request.json if isinstance(request.json, dict) else {}
+    raw_msg = str(data.get('message', '')).strip()
+    client_id = str(data.get('client_id', '')).strip()
+    context = data.get('context') if isinstance(data, dict) else None
+    if not isinstance(context, dict):
+        context = {}
 
-    msg_lower = raw_msg.lower()
-    is_content_vietnamese = is_vietnamese(clean_text)
-    target_lang = 'en'
-    
-    if "nghĩa là" in msg_lower or "tiếng việt" in msg_lower:
-        target_lang = 'vi'
-    elif "tiếng anh" in msg_lower:
+    sess = _get_or_create_chat_session(client_id)
+
+    # Cập nhật grade/topic nếu frontend đang chọn bài
+    ctx_grade = _normalize_key(context.get('gradeId'))
+    ctx_topic = _normalize_key(context.get('topicId'))
+    if ctx_grade:
+        sess['gradeId'] = ctx_grade
+    if ctx_topic:
+        sess['topicId'] = ctx_topic
+
+    msg_lower = raw_msg.lower().strip()
+    if msg_lower in BOT_MEMORY:
+        return jsonify({"reply": BOT_MEMORY[msg_lower], "actions": _default_chat_actions()})
+
+    # Nếu không có message thì trả về hướng dẫn
+    if not msg_lower:
+        return jsonify({
+            "reply": "Chào bé! Robo có thể luyện <b>từ vựng</b>, <b>ngữ pháp</b>, và <b>phát âm</b>. Bé gõ: 'từ vựng' / 'ngữ pháp' / 'phát âm' nhé!",
+            "actions": _default_chat_actions(),
+        })
+
+    # Lệnh dừng/reset
+    if msg_lower in ['stop', 'dừng', 'thoát', 'reset']:
+        sess['pending'] = None
+        return jsonify({
+            "reply": "Ok bé! Robo đã dừng bài luyện. Bé muốn luyện gì tiếp?",
+            "actions": _default_chat_actions(),
+        })
+
+    # Ưu tiên chế độ dịch nếu bé hỏi rõ "dịch"
+    if 'dịch' in msg_lower or 'nghĩa là' in msg_lower or 'tiếng anh là' in msg_lower or 'tiếng việt là' in msg_lower:
+        clean_text = clean_input(raw_msg)
+        if not clean_text:
+            return jsonify({"reply": "Bé muốn dịch từ/câu gì? Gõ: Dịch ...", "actions": _default_chat_actions()})
+
+        is_content_vietnamese = is_vietnamese(clean_text)
         target_lang = 'en'
-    else:
-        if not is_content_vietnamese:
+        if "nghĩa là" in msg_lower or "tiếng việt" in msg_lower:
             target_lang = 'vi'
+        elif "tiếng anh" in msg_lower:
+            target_lang = 'en'
+        else:
+            if not is_content_vietnamese:
+                target_lang = 'vi'
 
-    trans = perform_translation(clean_text, target_lang)
-    
-    if target_lang == 'en':
-        response = f"📖 '{clean_text}' tiếng Anh là: <b>{trans}</b>"
-    else:
-        response = f"📖 '{clean_text}' nghĩa là: <b>{trans}</b>"
+        trans = perform_translation(clean_text, target_lang)
+        if target_lang == 'en':
+            response = f"📖 '{clean_text}' tiếng Anh là: <b>{trans}</b>"
+        else:
+            response = f"📖 '{clean_text}' nghĩa là: <b>{trans}</b>"
+        return jsonify({"reply": response, "actions": _default_chat_actions()})
 
-    # if "là gì" in msg_lower or "nghĩa là" in msg_lower:
-    #     if is_content_vietnamese:
-    #         trans = perform_translation(clean_text, 'en')
-    #         response = f"🇬🇧 '{clean_text}' tiếng Anh là: <b>{trans}</b>"
-    #     else:
-    #         trans = perform_translation(clean_text, 'vi')
-    #         response = f"📖 '{clean_text}' nghĩa là: <b>{trans}</b>"
-    # elif "tiếng anh" in msg_lower:
-    #     trans = perform_translation(clean_text, 'en')
-    #     response = f"🇬🇧 '{clean_text}' tiếng Anh là: <b>{trans}</b>"
-    # elif "tiếng việt" in msg_lower:
-    #     trans = perform_translation(clean_text, 'vi')
-    #     response = f"📖 '{clean_text}' nghĩa là: <b>{trans}</b>"
-    # else:
-    #     if "dịch" in msg_lower or (not is_content_vietnamese and " " not in clean_text):
-    #         if is_content_vietnamese:
-    #             trans = perform_translation(clean_text, 'en')
-    #             response = f"🇬🇧 '{clean_text}' tiếng Anh là: <b>{trans}</b>"
-    #         else:
-    #             trans = perform_translation(clean_text, 'vi')
-    #             response = f"🇻🇳 '{clean_text}' nghĩa là: <b>{trans}</b>"
-    #     else:
-    #         response = "Robo chưa hiểu. Bé hỏi 'Dịch con mèo' hoặc 'Hello là gì' nhé!"
+    # Xác định topic hiện hành
+    grade_id = sess.get('gradeId')
+    topic_id = sess.get('topicId')
+    topic = _get_topic_safe(grade_id, topic_id) if grade_id and topic_id else None
 
-    return jsonify({"reply": response})
+    # Lệnh bắt đầu luyện
+    start_vocab = ('từ vựng' in msg_lower) or ('vocab' in msg_lower)
+    start_grammar = ('ngữ pháp' in msg_lower) or ('grammar' in msg_lower) or (msg_lower.startswith('viết câu'))
+    start_pronounce = ('phát âm' in msg_lower) or ('luyện nói' in msg_lower) or ('pronounce' in msg_lower)
+    start_help = msg_lower in ['help', 'giúp', 'giúp đỡ', 'hướng dẫn']
+
+    if start_help:
+        return jsonify({
+            "reply": (
+                "Bé có thể:\n"
+                "<br>- Gõ <b>từ vựng</b>: Robo hỏi nghĩa → bé trả lời tiếng Anh"
+                "<br>- Gõ <b>ngữ pháp</b>: Robo cho câu tiếng Việt → bé viết câu tiếng Anh"
+                "<br>- Gõ <b>phát âm</b>: Robo đưa từ → bé bấm nút micro để đọc"
+                "<br><small>Mẹo: Hãy chọn 1 chủ đề (Lớp/Topic) ở màn hình chính để Robo hỏi đúng bài đang học.</small>"
+            ),
+            "actions": _default_chat_actions(),
+        })
+
+    if start_vocab:
+        if not topic:
+            return jsonify({
+                "reply": "Bé hãy chọn 1 chủ đề ở màn hình chính trước nhé (Lớp → Topic). Sau đó gõ lại 'từ vựng'.",
+                "actions": _default_chat_actions(),
+            })
+        q = _pick_vocab_question(topic)
+        if not q:
+            return jsonify({"reply": "Chủ đề này chưa có từ vựng để luyện.", "actions": _default_chat_actions()})
+        sess['pending'] = q
+        return jsonify({
+            "reply": f"🧩 <b>Từ vựng</b>: Tiếng Anh của '<b>{q['vi']}</b>' là gì?",
+            "actions": [
+                {'action': 'start_vocab', 'label': 'Câu khác'},
+                {'action': 'start_pronounce', 'label': 'Luyện phát âm'},
+                {'action': 'stop', 'label': 'Dừng'},
+            ],
+        })
+
+    if start_grammar:
+        if not topic:
+            return jsonify({
+                "reply": "Bé hãy chọn 1 chủ đề ở màn hình chính trước nhé (Lớp → Topic). Sau đó gõ lại 'ngữ pháp'.",
+                "actions": _default_chat_actions(),
+            })
+        q = _pick_grammar_question(topic)
+        if not q:
+            return jsonify({"reply": "Chủ đề này chưa có bài ngữ pháp để luyện.", "actions": _default_chat_actions()})
+        sess['pending'] = q
+        return jsonify({
+            "reply": f"📝 <b>Ngữ pháp</b>: Viết câu tiếng Anh cho: '<b>{q['prompt_vi']}</b>'",
+            "actions": [
+                {'action': 'start_grammar', 'label': 'Câu khác'},
+                {'action': 'stop', 'label': 'Dừng'},
+            ],
+        })
+
+    if start_pronounce:
+        if not topic:
+            return jsonify({
+                "reply": "Bé hãy chọn 1 chủ đề ở màn hình chính trước nhé (Lớp → Topic). Sau đó gõ lại 'phát âm'.",
+                "actions": _default_chat_actions(),
+            })
+        q = _pick_vocab_question(topic)
+        if not q:
+            return jsonify({"reply": "Chủ đề này chưa có từ để luyện phát âm.", "actions": _default_chat_actions()})
+        phon = ''
+        try:
+            phon = PHONETIC_CACHE.get(_normalize_key(q['en']), '')
+            if not phon:
+                phon = _fetch_phonetic_from_dictionary_api(q['en'])
+                PHONETIC_CACHE[_normalize_key(q['en'])] = phon
+        except Exception:
+            phon = ''
+
+        sess['pending'] = {
+            'type': 'pronounce',
+            'vocabIndex': q['vocabIndex'],
+            'en': q['en'],
+            'vi': q['vi'],
+        }
+        ipa = f" <span class='text-slate-500'>({phon})</span>" if phon else ''
+        return jsonify({
+            "reply": f"🎤 <b>Phát âm</b>: Bé hãy đọc từ <b>{q['en']}</b>{ipa}. Bấm nút micro bên dưới để đọc nhé!",
+            "actions": [
+                {'action': 'pronounce_mic', 'label': '🎤 Bấm để nói', 'target': q['en']},
+                {'action': 'tts', 'label': '🔊 Nghe mẫu', 'target': q['en']},
+                {'action': 'start_pronounce', 'label': 'Từ khác'},
+                {'action': 'stop', 'label': 'Dừng'},
+            ],
+        })
+
+    # Nếu đang có câu hỏi chờ trả lời
+    pending = sess.get('pending') if isinstance(sess, dict) else None
+    if isinstance(pending, dict) and pending.get('type') == 'vocab':
+        user = _normalize_en_answer(raw_msg)
+        correct = _normalize_en_answer(pending.get('en', ''))
+        sim = _similarity(user, correct)
+        is_correct = (user == correct) or (sim >= 0.88)
+        if is_correct:
+            reply = f"✅ Đúng rồi! Đáp án: <b>{pending.get('en')}</b>"
+        else:
+            reply = (
+                f"❌ Chưa đúng. Bé trả lời: <b>{raw_msg}</b>"
+                f"<br>Đáp án đúng: <b>{pending.get('en')}</b>"
+            )
+
+        # Ghi lịch sử (không cộng điểm theo localStorage; chỉ lưu log)
+        try:
+            qid = f"chat::vocab::{grade_id}::{topic_id}::{pending.get('vocabIndex')}::{_normalize_key(pending.get('en'))}"
+            save_to_history(
+                "Chat Vocab",
+                f"Tiếng Anh của '{pending.get('vi')}'",
+                raw_msg,
+                100 if is_correct else 0,
+                is_correct,
+                question_id=qid,
+                base_score=100 if is_correct else 0,
+                counted=False,
+                context={"gradeId": grade_id, "topicId": topic_id, "category": "chat_vocab", "itemId": pending.get('vocabIndex')},
+            )
+        except Exception:
+            pass
+
+        # Tự ra câu tiếp theo
+        sess['pending'] = None
+        return jsonify({
+            "reply": reply + "<br><small>Muốn làm tiếp: bấm 'Câu khác' hoặc gõ 'từ vựng'.</small>",
+            "actions": [
+                {'action': 'start_vocab', 'label': 'Câu khác'},
+                {'action': 'start_pronounce', 'label': 'Luyện phát âm'},
+                {'action': 'stop', 'label': 'Dừng'},
+            ],
+        })
+
+    if isinstance(pending, dict) and pending.get('type') == 'grammar':
+        scored = _score_grammar_like_check_api(raw_msg, pending.get('answer', ''))
+        try:
+            qid = f"chat::grammar::{grade_id}::{topic_id}::{pending.get('grammarIndex')}"
+            save_to_history(
+                "Chat Grammar",
+                f"Viết câu: {pending.get('prompt_vi')}",
+                raw_msg,
+                int(scored.get('score') or 0),
+                bool(scored.get('is_correct')),
+                question_id=qid,
+                base_score=int(scored.get('score') or 0),
+                counted=False,
+                context={"gradeId": grade_id, "topicId": topic_id, "category": "chat_grammar", "itemId": pending.get('grammarIndex')},
+            )
+        except Exception:
+            pass
+        sess['pending'] = None
+        reply = f"{scored.get('message','')}" + (f"<br>{scored.get('suggestion','')}" if scored.get('suggestion') else '')
+        return jsonify({
+            "reply": reply + "<br><small>Muốn làm tiếp: bấm 'Câu khác' hoặc gõ 'ngữ pháp'.</small>",
+            "actions": [
+                {'action': 'start_grammar', 'label': 'Câu khác'},
+                {'action': 'stop', 'label': 'Dừng'},
+            ],
+        })
+
+    # Mặc định: nhắc hướng dẫn
+    return jsonify({
+        "reply": "Robo có thể luyện <b>từ vựng</b>, <b>ngữ pháp</b>, <b>phát âm</b>. Bé muốn luyện phần nào?",
+        "actions": _default_chat_actions(),
+    })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # debug=True + reloader sẽ import app 2 lần -> làm startup chậm.
+    app.run(debug=True, use_reloader=False)

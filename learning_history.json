@@ -1,922 +1,750 @@
 [
     {
-        "timestamp": "2025-12-21 08:16:23",
+        "timestamp": "2025-12-27 21:55:13",
         "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "this is the pillow",
+        "question": "Viết câu: There is a river.",
+        "question_id": "grammar::lop2::countryside::grammar::1::there is a river.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "countryside",
+            "category": "grammar",
+            "itemId": 1
+        },
+        "user_answer": "it is a river",
         "score": 0,
+        "base_score": 87,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 21:55:14",
+        "mode": "Grammar",
+        "question": "Viết câu: There is a river.",
+        "question_id": "grammar::lop2::countryside::grammar::1::there is a river.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "countryside",
+            "category": "grammar",
+            "itemId": 1
+        },
+        "user_answer": "it is a river",
+        "score": 0,
+        "base_score": 87,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 21:55:14",
+        "mode": "Grammar",
+        "question": "Viết câu: There is a river.",
+        "question_id": "grammar::lop2::countryside::grammar::1::there is a river.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "countryside",
+            "category": "grammar",
+            "itemId": 1
+        },
+        "user_answer": "it is a river",
+        "score": 0,
+        "base_score": 87,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 21:55:30",
+        "mode": "Grammar",
+        "question": "Viết câu: There is a river.",
+        "question_id": "grammar::lop2::countryside::grammar::1::there is a river.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "countryside",
+            "category": "grammar",
+            "itemId": 1
+        },
+        "user_answer": "This is a river",
+        "score": 0,
+        "base_score": 84,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 08:16:23",
+        "timestamp": "2025-12-27 21:55:37",
         "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "this is the pillow",
+        "question": "Viết câu: There is a river.",
+        "question_id": "grammar::lop2::countryside::grammar::1::there is a river.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "countryside",
+            "category": "grammar",
+            "itemId": 1
+        },
+        "user_answer": "This is a river.",
         "score": 0,
-        "result": "Sai"
+        "base_score": 89,
+        "counted": false,
+        "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 08:16:23",
+        "timestamp": "2025-12-27 21:55:43",
         "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "this is the pillow",
+        "question": "Viết câu: There is a river.",
+        "question_id": "grammar::lop2::countryside::grammar::1::there is a river.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "countryside",
+            "category": "grammar",
+            "itemId": 1
+        },
+        "user_answer": "This is the river.",
         "score": 0,
-        "result": "Sai"
+        "base_score": 88,
+        "counted": false,
+        "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 08:16:24",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "this is the pillow",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:24",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "i sleep in bed",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:24",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "i sleep in bed",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:24",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "i sleep in bed",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:24",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "i sleep in bed",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:26",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "i sleep in bed",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:39",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "I sleep on the bed.",
+        "timestamp": "2025-12-27 22:01:09",
+        "mode": "Quiz",
+        "question": "Câu hỏi: Con vật nào kêu 'Quác quác'?",
+        "question_id": "quiz::lop2::farm::quiz::0::con vật nào kêu 'quác quác'?",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "quiz",
+            "itemId": 0
+        },
+        "user_answer": "Duck",
         "score": 100,
+        "base_score": 100,
+        "counted": true,
         "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 08:16:51",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "I wake up",
-        "score": 93,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:16:55",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "I wake up",
-        "score": 93,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:17:27",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "village is",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:17:54",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "the village is peaceful",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:18:06",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "The village is peaceful",
-        "score": 99,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:18:11",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "The village is peaceful.",
+        "timestamp": "2025-12-27 22:01:12",
+        "mode": "Quiz",
+        "question": "Câu hỏi: Con bò tiếng Anh là?",
+        "question_id": "quiz::lop2::farm::quiz::1::con bò tiếng anh là?",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "quiz",
+            "itemId": 1
+        },
+        "user_answer": "Cow",
         "score": 100,
+        "base_score": 100,
+        "counted": true,
         "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 08:18:30",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "kk",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:18:48",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "There is a river.",
+        "timestamp": "2025-12-27 22:01:14",
+        "mode": "Quiz",
+        "question": "Câu hỏi: Con dê tiếng Anh là?",
+        "question_id": "quiz::lop2::farm::quiz::2::con dê tiếng anh là?",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "quiz",
+            "itemId": 2
+        },
+        "user_answer": "Goat",
         "score": 100,
+        "base_score": 100,
+        "counted": true,
         "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 08:19:00",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "cầu gân",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:19:17",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "the bridge is ne",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:19:27",
-        "mode": "Grammar",
-        "question": "Viết câu (ngữ pháp)",
-        "user_answer": "the bridge is near the road",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:19:46",
+        "timestamp": "2025-12-27 22:01:20",
         "mode": "Writing",
-        "question": "Viết từ: River",
-        "user_answer": "river",
+        "question": "Viết từ: Cow",
+        "question_id": "writing::lop2::farm::missing::0::cow",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "missing",
+            "itemId": 0
+        },
+        "user_answer": "Cow",
         "score": 100,
+        "base_score": 100,
+        "counted": true,
         "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 08:25:25",
+        "timestamp": "2025-12-27 22:01:26",
+        "mode": "Writing",
+        "question": "Viết từ: Duck",
+        "question_id": "writing::lop2::farm::missing::1::duck",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "missing",
+            "itemId": 1
+        },
+        "user_answer": "Duck",
+        "score": 100,
+        "base_score": 100,
+        "counted": true,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 22:01:32",
+        "mode": "Writing",
+        "question": "Viết từ: Sheep",
+        "question_id": "writing::lop2::farm::missing::2::sheep",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "missing",
+            "itemId": 2
+        },
+        "user_answer": "Sheep",
+        "score": 100,
+        "base_score": 100,
+        "counted": true,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 22:01:37",
+        "mode": "Writing",
+        "question": "Viết từ: Horse",
+        "question_id": "writing::lop2::farm::missing::3::horse",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "missing",
+            "itemId": 3
+        },
+        "user_answer": "Hurse",
+        "score": 0,
+        "base_score": 0,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-27 22:01:42",
+        "mode": "Writing",
+        "question": "Viết từ: Pig",
+        "question_id": "writing::lop2::farm::missing::4::pig",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "missing",
+            "itemId": 4
+        },
+        "user_answer": "Pig",
+        "score": 100,
+        "base_score": 100,
+        "counted": true,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 22:01:45",
+        "mode": "Writing",
+        "question": "Viết từ: Goat",
+        "question_id": "writing::lop2::farm::missing::5::goat",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "missing",
+            "itemId": 5
+        },
+        "user_answer": "Goet",
+        "score": 0,
+        "base_score": 0,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-27 22:01:58",
+        "mode": "Writing",
+        "question": "Viết từ: Cow",
+        "question_id": "writing::lop2::farm::writing::0::cow",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "writing",
+            "itemId": 0
+        },
+        "user_answer": "cow",
+        "score": 100,
+        "base_score": 100,
+        "counted": true,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 22:02:11",
+        "mode": "Grammar",
+        "question": "Viết câu: This is a cow.",
+        "question_id": "grammar::lop2::farm::grammar::0::this is a cow.",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "farm",
+            "category": "grammar",
+            "itemId": 0
+        },
+        "user_answer": "This is a cow.",
+        "score": 100,
+        "base_score": 100,
+        "counted": true,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 23:18:34",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Quả chuối'",
+        "question_id": "chat::vocab::lop1::market::1::banana",
+        "context": {
+            "gradeId": "lop1",
+            "topicId": "market",
+            "category": "chat_vocab",
+            "itemId": 1
+        },
+        "user_answer": "banana",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-27 23:18:48",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Quả cam'",
+        "question_id": "chat::vocab::lop1::market::4::orange",
+        "context": {
+            "gradeId": "lop1",
+            "topicId": "market",
+            "category": "chat_vocab",
+            "itemId": 4
+        },
+        "user_answer": "orangge",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-28 10:08:16",
+        "mode": "Chat Grammar",
+        "question": "Viết câu: Phòng ngủ của tôi rộng rãi.",
+        "question_id": "chat::grammar::lop2::home::1",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "home",
+            "category": "chat_grammar",
+            "itemId": 1
+        },
+        "user_answer": "my bedroom is",
+        "score": 75,
+        "base_score": 75,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-28 10:08:52",
+        "mode": "Chat Grammar",
+        "question": "Viết câu: Phòng tắm sạch sẽ.",
+        "question_id": "chat::grammar::lop2::home::0",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "home",
+            "category": "chat_grammar",
+            "itemId": 0
+        },
+        "user_answer": "my bathroom is",
+        "score": 68,
+        "base_score": 68,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-28 10:34:06",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Nhà bếp'",
+        "question_id": "chat::vocab::lop2::home::0::kitchen",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "home",
+            "category": "chat_vocab",
+            "itemId": 0
+        },
+        "user_answer": "kitchen",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-28 10:34:19",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Cửa sổ'",
+        "question_id": "chat::vocab::lop2::home::3::window",
+        "context": {
+            "gradeId": "lop2",
+            "topicId": "home",
+            "category": "chat_vocab",
+            "itemId": 3
+        },
+        "user_answer": "windown",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-28 10:42:56",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Có tuyết'",
+        "question_id": "chat::vocab::lop4::weather::5::snowy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_vocab",
+            "itemId": 5
+        },
+        "user_answer": "snow",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-28 10:43:07",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Bão'",
+        "question_id": "chat::vocab::lop4::weather::4::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_vocab",
+            "itemId": 4
+        },
+        "user_answer": "ư",
+        "score": 0,
+        "base_score": 0,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-28 10:43:32",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Có tuyết'",
+        "question_id": "chat::vocab::lop4::weather::5::snowy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_vocab",
+            "itemId": 5
+        },
+        "user_answer": "snowy",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-28 10:43:47",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Có gió'",
+        "question_id": "chat::vocab::lop4::weather::2::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_vocab",
+            "itemId": 2
+        },
+        "user_answer": "windy",
+        "score": 100,
+        "base_score": 100,
+        "counted": false,
+        "result": "Đúng"
+    },
+    {
+        "timestamp": "2025-12-28 10:44:37",
         "mode": "Speaking",
-        "question": "Đọc từ: Bed",
-        "user_answer": "map",
-        "score": 31,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:25:32",
-        "mode": "Speaking",
-        "question": "Đọc từ: Bed",
-        "user_answer": "Mac",
-        "score": 29,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:25:37",
-        "mode": "Speaking",
-        "question": "Đọc từ: Bed",
-        "user_answer": "map",
-        "score": 31,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:25:42",
-        "mode": "Speaking",
-        "question": "Đọc từ: Bed",
-        "user_answer": "map",
-        "score": 31,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:25:56",
-        "mode": "Speaking",
-        "question": "Đọc từ: Lamp",
-        "user_answer": "lamb",
-        "score": 26,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:26:01",
-        "mode": "Speaking",
-        "question": "Đọc từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:26:08",
-        "mode": "Speaking",
-        "question": "Đọc từ: Pillow",
-        "user_answer": "Halo",
-        "score": 25,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:26:17",
-        "mode": "Speaking",
-        "question": "Đọc từ: Pillow",
-        "user_answer": "pillow",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:26:24",
-        "mode": "Speaking",
-        "question": "Đọc từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:26:32",
-        "mode": "Speaking",
-        "question": "Đọc từ: Wake up",
-        "user_answer": "wake up",
-        "score": 99,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:26:50",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wake up",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:49:12",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:49:25",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:49:27",
-        "mode": "Quiz",
-        "question": "Đáp án đúng: Ngủ",
-        "user_answer": "Chạy",
+        "question": "Đọc từ: Stormy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:stormy::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Stormy"
+        },
+        "user_answer": "stymie",
         "score": 0,
+        "base_score": 25,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 08:49:28",
-        "mode": "Quiz",
-        "question": "Đáp án đúng: Blanket",
-        "user_answer": "Lamp",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 08:49:52",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 08:50:00",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:16",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:21",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:26",
-        "mode": "Writing",
-        "question": "Viết từ: Pillow",
-        "user_answer": "pillow",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:30",
-        "mode": "Writing",
-        "question": "Viết từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:31",
-        "mode": "Writing",
-        "question": "Viết từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:46",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "pila",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:46",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "pila",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:46",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "pila",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:46",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "pila",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 09:04:55",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wake up",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:05:02",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:05:05",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Ngủ",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:05:09",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Blanket",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:23:20",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "this is the pillow",
-        "score": 90,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:23:21",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "this is the pillow",
-        "score": 90,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:23:21",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "this is the pillow",
-        "score": 90,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:23:21",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "this is the pillow",
-        "score": 90,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:29:11",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "this is the pillow",
-        "score": 90,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:29:25",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I sleep on the bed",
-        "score": 98,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:29:38",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:36:30",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:36:34",
-        "mode": "Writing",
-        "question": "Viết từ: Pillow",
-        "user_answer": "pillow",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:36:39",
-        "mode": "Writing",
-        "question": "Viết từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:36:50",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "blanket",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:36:57",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wakeup",
-        "score": 0,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 09:37:01",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wake up",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 09:37:11",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I wake up on the bed",
-        "score": 80,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 21:08:44",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I wake up",
-        "score": 93,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:11:53",
+        "timestamp": "2025-12-28 10:44:50",
         "mode": "Speaking",
-        "question": "Đọc từ: Table",
-        "user_answer": "table",
-        "score": 100,
-        "result": "Đúng"
+        "question": "Đọc từ: Stormy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:stormy::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Stormy"
+        },
+        "user_answer": "dog meme",
+        "score": 0,
+        "base_score": 11,
+        "counted": false,
+        "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:12:19",
+        "timestamp": "2025-12-28 10:44:55",
         "mode": "Speaking",
-        "question": "Đọc từ: Spoon",
-        "user_answer": "the Boom",
-        "score": 15,
+        "question": "Đọc từ: Stormy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:stormy::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Stormy"
+        },
+        "user_answer": "Tommy",
+        "score": 0,
+        "base_score": 26,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:12:50",
+        "timestamp": "2025-12-28 10:45:00",
         "mode": "Speaking",
-        "question": "Đọc từ: Spoon",
-        "user_answer": "Supreme",
-        "score": 15,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 21:13:16",
-        "mode": "Writing",
-        "question": "Viết từ: Spoon",
-        "user_answer": "table",
+        "question": "Đọc từ: Stormy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:stormy::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Stormy"
+        },
+        "user_answer": "satomi satomi",
         "score": 0,
+        "base_score": 18,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:13:33",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:13:44",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:13:50",
-        "mode": "Writing",
-        "question": "Viết từ: Pillow",
-        "user_answer": "pillow",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:13:56",
-        "mode": "Writing",
-        "question": "Viết từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:14:07",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "blanker",
+        "timestamp": "2025-12-28 10:45:16",
+        "mode": "Speaking",
+        "question": "Đọc từ: Stormy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:stormy::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Stormy"
+        },
+        "user_answer": "football me",
         "score": 0,
+        "base_score": 18,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:14:11",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "blanket",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:14:18",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wake up",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:14:39",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "This is the pillow.",
-        "score": 92,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:14:49",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "This is the a pillow.",
-        "score": 97,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:14:58",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "This is a pillow.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:15:13",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I sleep on the bed.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:15:21",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I wake up.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:15:50",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:15:52",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Ngủ",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:15:54",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Blanket",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:16:57",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:17:04",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:17:06",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:17:10",
-        "mode": "Writing",
-        "question": "Viết từ: Pillow",
-        "user_answer": "pillow",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:27:43",
-        "mode": "Writing",
-        "question": "Viết từ: Bed",
-        "user_answer": "bed",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:27:51",
-        "mode": "Writing",
-        "question": "Viết từ: Lamp",
-        "user_answer": "lamp",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:27:56",
-        "mode": "Writing",
-        "question": "Viết từ: Pillow",
-        "user_answer": "pillow",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:02",
-        "mode": "Writing",
-        "question": "Viết từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:10",
-        "mode": "Writing",
-        "question": "Viết từ: Sleep",
-        "user_answer": "sleep",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:18",
-        "mode": "Writing",
-        "question": "Viết từ: Blanket",
-        "user_answer": "blanket",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:24",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wake up",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:25",
-        "mode": "Writing",
-        "question": "Viết từ: Wake up",
-        "user_answer": "wake up",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:54",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "This is a pillow.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:28:57",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "This is a pillow.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:29:12",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I sleep on the bed.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:29:16",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "iê",
-        "score": 12,
-        "result": "Sai"
-    },
-    {
-        "timestamp": "2025-12-21 21:29:38",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "I wake up.",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:29:48",
-        "mode": "Quiz",
-        "question": "Đáp án đúng: Bed",
-        "user_answer": "Table",
+        "timestamp": "2025-12-28 10:45:20",
+        "mode": "Speaking",
+        "question": "Đọc từ: Stormy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:stormy::stormy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Stormy"
+        },
+        "user_answer": "Tommy",
         "score": 0,
+        "base_score": 26,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:29:50",
-        "mode": "Quiz",
-        "question": "Đáp án đúng: Ngủ",
-        "user_answer": "Ăn",
+        "timestamp": "2025-12-28 10:46:04",
+        "mode": "Speaking",
+        "question": "Đọc từ: Windy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:windy::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Windy"
+        },
+        "user_answer": "Wendy",
         "score": 0,
+        "base_score": 19,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:29:51",
-        "mode": "Quiz",
-        "question": "Đáp án đúng: Blanket",
-        "user_answer": "Pillow",
+        "timestamp": "2025-12-28 10:46:15",
+        "mode": "Speaking",
+        "question": "Đọc từ: Windy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:windy::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Windy"
+        },
+        "user_answer": "Wendy",
         "score": 0,
+        "base_score": 19,
+        "counted": false,
         "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:29:58",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Bed",
+        "timestamp": "2025-12-28 10:46:20",
+        "mode": "Speaking",
+        "question": "Đọc từ: Windy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:windy::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Windy"
+        },
+        "user_answer": "reading",
+        "score": 0,
+        "base_score": 21,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-28 10:46:24",
+        "mode": "Speaking",
+        "question": "Đọc từ: Windy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:windy::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Windy"
+        },
+        "user_answer": "Wendy",
+        "score": 0,
+        "base_score": 19,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-28 10:46:28",
+        "mode": "Speaking",
+        "question": "Đọc từ: Windy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:windy::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Windy"
+        },
+        "user_answer": "Wendy",
+        "score": 0,
+        "base_score": 19,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2025-12-28 10:46:31",
+        "mode": "Speaking",
+        "question": "Đọc từ: Windy",
+        "question_id": "speaking::lop4::weather::chat_pronounce::chat:windy::windy",
+        "context": {
+            "gradeId": "lop4",
+            "topicId": "weather",
+            "category": "chat_pronounce",
+            "itemId": "chat:Windy"
+        },
+        "user_answer": "Wendy",
+        "score": 0,
+        "base_score": 19,
+        "counted": false,
+        "result": "Sai"
+    },
+    {
+        "timestamp": "2026-01-01 22:03:56",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Ông'",
+        "question_id": "chat::vocab::lop3::family::5::grandfather",
+        "context": {
+            "gradeId": "lop3",
+            "topicId": "family",
+            "category": "chat_vocab",
+            "itemId": 5
+        },
+        "user_answer": "grandfather",
         "score": 100,
+        "base_score": 100,
+        "counted": false,
         "result": "Đúng"
     },
     {
-        "timestamp": "2025-12-21 21:30:00",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Ngủ",
-        "score": 100,
-        "result": "Đúng"
+        "timestamp": "2026-01-01 22:04:06",
+        "mode": "Chat Vocab",
+        "question": "Tiếng Anh của 'Bố'",
+        "question_id": "chat::vocab::lop3::family::0::father",
+        "context": {
+            "gradeId": "lop3",
+            "topicId": "family",
+            "category": "chat_vocab",
+            "itemId": 0
+        },
+        "user_answer": "dad",
+        "score": 0,
+        "base_score": 0,
+        "counted": false,
+        "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:30:02",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Blanket",
-        "score": 100,
-        "result": "Đúng"
+        "timestamp": "2026-01-01 22:07:29",
+        "mode": "Speaking",
+        "question": "Đọc từ: Mother",
+        "question_id": "speaking::lop3::family::chat_pronounce::chat:mother::mother",
+        "context": {
+            "gradeId": "lop3",
+            "topicId": "family",
+            "category": "chat_pronounce",
+            "itemId": "chat:Mother"
+        },
+        "user_answer": "imagine",
+        "score": 0,
+        "base_score": 28,
+        "counted": false,
+        "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:32:07",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Spoon",
-        "score": 100,
-        "result": "Đúng"
+        "timestamp": "2026-01-01 22:07:35",
+        "mode": "Speaking",
+        "question": "Đọc từ: Mother",
+        "question_id": "speaking::lop3::family::chat_pronounce::chat:mother::mother",
+        "context": {
+            "gradeId": "lop3",
+            "topicId": "family",
+            "category": "chat_pronounce",
+            "itemId": "chat:Mother"
+        },
+        "user_answer": "mazzo",
+        "score": 0,
+        "base_score": 31,
+        "counted": false,
+        "result": "Sai"
     },
     {
-        "timestamp": "2025-12-21 21:32:10",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Cup",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:32:13",
-        "mode": "Quiz",
-        "question": "Đáp án đúng là gì?",
-        "user_answer": "Fork",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:32:24",
-        "mode": "Writing",
-        "question": "Viết từ: Table",
-        "user_answer": "table",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:32:30",
-        "mode": "Writing",
-        "question": "Viết từ: Spoon",
-        "user_answer": "spoon",
-        "score": 100,
-        "result": "Đúng"
-    },
-    {
-        "timestamp": "2025-12-21 21:32:51",
-        "mode": "Grammar",
-        "question": "Viết câu",
-        "user_answer": "This is a spoon.",
-        "score": 100,
-        "result": "Đúng"
+        "timestamp": "2026-01-01 22:08:07",
+        "mode": "Speaking",
+        "question": "Đọc từ: Mother",
+        "question_id": "speaking::lop3::family::chat_pronounce::chat:mother::mother",
+        "context": {
+            "gradeId": "lop3",
+            "topicId": "family",
+            "category": "chat_pronounce",
+            "itemId": "chat:Mother"
+        },
+        "user_answer": "my love my love",
+        "score": 0,
+        "base_score": 38,
+        "counted": false,
+        "result": "Sai"
     }
 ]
