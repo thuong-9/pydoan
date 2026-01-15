@@ -1171,3 +1171,61 @@ function ensureDefaultChatActions() {
         { action: 'start_quiz', label: 'Kiểm tra' },
     ]);
 }
+
+// Floating Chat Widget Logic
+function toggleFloatingChat() {
+    const win = document.getElementById('chat-widget-window');
+    if (!win) return;
+    win.classList.toggle('hidden-chat');
+}
+
+function sendWidgetChat() {
+    const input = document.getElementById('chat-widget-input');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg) return;
+    renderWidgetMessage(msg, 'user');
+    input.value = '';
+    // Gửi yêu cầu dịch tới API chat
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: 'dịch ' + msg })
+    })
+    .then(r => r.json())
+    .then(data => {
+        renderWidgetMessage(data.reply || 'Không có phản hồi', 'bot');
+    })
+    .catch(() => {
+        renderWidgetMessage('Lỗi mạng', 'bot');
+    });
+}
+
+function renderWidgetMessage(text, who) {
+    const box = document.getElementById('chat-widget-messages');
+    if (!box) return;
+    const div = document.createElement('div');
+    div.className = 'p-3 rounded-2xl border text-sm shadow-sm mb-2 ' + (who === 'user' ? 'self-end bg-blue-100 border-blue-200 text-blue-800' : 'self-start bg-white border-slate-200 text-slate-700');
+    div.innerHTML = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+// Chỉ hiển thị nút bong bóng chat dịch khi đang ở chế độ tự học (screen-learn). Ẩn khi chuyển sang chế độ khác.
+function updateWidgetChatVisibility() {
+    const btn = document.getElementById('chat-widget-btn');
+    const win = document.getElementById('chat-widget-window');
+    const learnScreen = document.getElementById('screen-learn');
+    if (!btn || !win || !learnScreen) return;
+    const isLearnVisible = !learnScreen.classList.contains('hidden');
+    btn.style.display = isLearnVisible ? 'flex' : 'none';
+    if (!isLearnVisible) win.classList.add('hidden-chat');
+}
+
+// Patch showScreen to update widget visibility
+const _origShowScreen = window.showScreen;
+window.showScreen = function(name) {
+    if (typeof _origShowScreen === 'function') _origShowScreen(name);
+    updateWidgetChatVisibility();
+};
+window.addEventListener('DOMContentLoaded', updateWidgetChatVisibility);
