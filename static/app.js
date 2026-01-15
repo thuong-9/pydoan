@@ -4,6 +4,30 @@ let grammarIndex = 0;
 let writingMode = 'vocab';
 let currentGradeId = null;
 let currentTopicId = null;
+let selectedMode = null; // 'self' | 'chat' | null
+
+const PHONETIC_CACHE = new Map();
+
+function getPhoneticCached(word) {
+    const key = String(word || '').trim().toLowerCase();
+    if (!key) return Promise.resolve('');
+
+    if (PHONETIC_CACHE.has(key)) {
+        return Promise.resolve(PHONETIC_CACHE.get(key) || '');
+    }
+
+    return fetch(`/api/phonetic?word=${encodeURIComponent(word)}`)
+        .then(r => r.json())
+        .then(d => {
+            const phon = (d && typeof d.phonetic === 'string') ? d.phonetic : '';
+            PHONETIC_CACHE.set(key, phon);
+            return phon;
+        })
+        .catch(() => {
+            PHONETIC_CACHE.set(key, '');
+            return '';
+        });
+}
 
 const SCORE_STORAGE_KEY = 'robo_english_scores_v1';
 const TOPIC_MAX_SCORE = 100;
@@ -12,7 +36,23 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 const recognition = new SpeechRecognition ? new SpeechRecognition() : null;
 if(recognition) { recognition.lang = 'en-US'; recognition.continuous = false; }
 
-window.onload = loadCurriculum;
+function setChatPanelVisible(visible) {
+    const panel = document.getElementById('chat-panel');
+    if (!panel) return;
+    panel.classList.toggle('hidden', !visible);
+}
+
+function setSelfLearningVisible(visible) {
+    const tabs = document.getElementById('self-learning-tabs');
+    const content = document.getElementById('self-learning-content');
+    if (tabs) tabs.classList.toggle('hidden', !visible);
+    if (content) content.classList.toggle('hidden', !visible);
+}
+
+window.onload = () => {
+    setChatPanelVisible(false);
+    loadCurriculum();
+};
 
 function loadScoreState() {
     try {
@@ -44,14 +84,15 @@ function ensureTopicProgress(state, gradeId, topicId) {
                 writing: [],
                 grammar: [],
                 quiz: [],
+                missing: [],
             },
         };
     }
     if (typeof state.topics[key].score !== 'number') state.topics[key].score = 0;
     if (!state.topics[key].completed || typeof state.topics[key].completed !== 'object') {
-        state.topics[key].completed = { speaking: [], writing: [], grammar: [], quiz: [] };
+        state.topics[key].completed = { speaking: [], writing: [], grammar: [], quiz: [], missing: [] };
     }
-    for (const cat of ['speaking', 'writing', 'grammar', 'quiz']) {
+    for (const cat of ['speaking', 'writing', 'grammar', 'quiz', 'missing']) {
         if (!Array.isArray(state.topics[key].completed[cat])) state.topics[key].completed[cat] = [];
     }
     return state.topics[key];
@@ -88,6 +129,7 @@ function getPerItemPoints(category, topicData) {
         writing: vocabCount,
         grammar: grammarCount,
         quiz: quizCount,
+        missing: vocabCount,
     };
 
     const totalItems = Object.values(counts).reduce((acc, c) => acc + (c > 0 ? c : 0), 0);
@@ -102,14 +144,18 @@ function normalizeTopicScoreIfComplete(topicProgress, topicData) {
     const grammarCount = Array.isArray(topicData?.grammar) ? topicData.grammar.length : 0;
     const quizCount = Array.isArray(topicData?.quiz) ? topicData.quiz.length : 0;
 
-    const totalItems = (vocabCount > 0 ? vocabCount : 0) * 2 + (grammarCount > 0 ? grammarCount : 0) + (quizCount > 0 ? quizCount : 0);
+    const totalItems =
+        (vocabCount > 0 ? vocabCount : 0) * 3 +
+        (grammarCount > 0 ? grammarCount : 0) +
+        (quizCount > 0 ? quizCount : 0);
     if (totalItems <= 0) return;
 
     const doneCount =
         (Array.isArray(topicProgress.completed.speaking) ? topicProgress.completed.speaking.length : 0) +
         (Array.isArray(topicProgress.completed.writing) ? topicProgress.completed.writing.length : 0) +
         (Array.isArray(topicProgress.completed.grammar) ? topicProgress.completed.grammar.length : 0) +
-        (Array.isArray(topicProgress.completed.quiz) ? topicProgress.completed.quiz.length : 0);
+        (Array.isArray(topicProgress.completed.quiz) ? topicProgress.completed.quiz.length : 0) +
+        (Array.isArray(topicProgress.completed.missing) ? topicProgress.completed.missing.length : 0);
 
     if (doneCount >= totalItems) {
         topicProgress.score = TOPIC_MAX_SCORE;
@@ -175,7 +221,11 @@ async function loadTopic(gradeId, topicId) {
     currentTopicId = topicId;
     renderTotalScore();
     document.getElementById('current-topic-title').innerText = currentData.title;
-    showScreen('learn');
+    const selectedTitleEl = document.getElementById('selected-topic-title');
+    if (selectedTitleEl) selectedTitleEl.innerText = currentData.title || '';
+    selectedMode = null;
+    setChatPanelVisible(false);
+    showScreen('mode');
     currentIndex = 0;
     grammarIndex = 0;
     writingMode = 'vocab';
@@ -183,16 +233,75 @@ async function loadTopic(gradeId, topicId) {
     switchTab('vocab');
 }
 
+function chooseMode(mode) {
+    if (mode === 'self') {
+        selectedMode = 'self';
+        setSelfLearningVisible(true);
+        setChatPanelVisible(false);
+        showScreen('learn');
+        switchTab('vocab');
+        return;
+    }
+    if (mode === 'chat') {
+        selectedMode = 'chat';
+        setSelfLearningVisible(false);
+        setChatPanelVisible(true);
+        // Go to learn screen and show chat panel (hide mode selection UI).
+        showScreen('learn');
+        switchTab('vocab');
+        ensureDefaultChatActions();
+        const input = document.getElementById('chat-input');
+        if (input) input.focus();
+    }
+}
+
 function showScreen(name) {
     document.getElementById('screen-home').classList.toggle('hidden', name !== 'home');
     document.getElementById('screen-learn').classList.toggle('hidden', name !== 'learn');
-    if (name === 'home') loadCurriculum();
+    const modeEl = document.getElementById('screen-mode');
+    if (modeEl) modeEl.classList.toggle('hidden', name !== 'mode');
+    if (name === 'home') {
+        selectedMode = null;
+        setChatPanelVisible(false);
+        loadCurriculum();
+    }
+}
+
+function goToModeSelection() {
+    // If no topic is selected yet, just go home.
+    if (!currentData || !currentGradeId || !currentTopicId) {
+        showScreen('home');
+        return;
+    }
+    selectedMode = null;
+    setChatPanelVisible(false);
+    setSelfLearningVisible(true);
+    showScreen('mode');
 }
 
 // --- Render Functions ---
 function renderVocab() {
     const container = document.getElementById('content-vocab');
-    container.innerHTML = currentData.vocab.map(word => `<div onclick="playTTS('${word.en}')" class="bg-slate-50 hover:bg-white border-2 border-transparent hover:border-blue-400 cursor-pointer rounded-2xl p-4 flex flex-col items-center text-center transition shadow-sm group"><div class="text-5xl mb-3 transform group-hover:scale-110 transition">${word.img}</div><div class="font-bold text-lg text-slate-800">${word.en}</div><div class="text-sm text-slate-500">${word.vi}</div></div>`).join('');
+    container.innerHTML = currentData.vocab.map((word, idx) => `
+        <div onclick="playTTS('${word.en}')" class="bg-slate-50 hover:bg-white border-2 border-transparent hover:border-blue-400 cursor-pointer rounded-2xl p-4 flex flex-col items-center text-center transition shadow-sm group">
+            <div class="text-5xl mb-3 transform group-hover:scale-110 transition">${word.img}</div>
+            <div class="font-bold text-lg text-slate-800">${word.en}</div>
+            <div class="text-sm text-slate-500 font-bold" id="vocab-phonetic-${idx}"></div>
+            <div class="text-sm text-slate-500">${word.vi}</div>
+        </div>
+    `).join('');
+
+    // Fill phonetic text asynchronously (small list => ok)
+    currentData.vocab.forEach((word, idx) => {
+        const el = document.getElementById(`vocab-phonetic-${idx}`);
+        if (!el || !word?.en) return;
+        el.innerText = '';
+        getPhoneticCached(word.en).then(phon => {
+            // Ensure still the same topic/data
+            const cur = currentData?.vocab?.[idx]?.en;
+            if (cur === word.en) el.innerText = phon || '';
+        });
+    });
 }
 
 // Speaking Logic
@@ -201,10 +310,21 @@ function updateSpeakCard() {
     const word = currentData.vocab[currentIndex];
     document.getElementById('speak-img').innerText = word.img;
     document.getElementById('speak-word').innerText = word.en;
+    const phoneticEl = document.getElementById('speak-phonetic');
+    if (phoneticEl) phoneticEl.innerText = '';
     document.getElementById('speak-meaning').innerText = word.vi;
     document.getElementById('speak-status').innerText = "Bấm micro để đọc";
     document.getElementById('speak-status').className = "text-lg font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-lg";
     document.getElementById('speak-suggestion').classList.add('hidden'); // Ẩn gợi ý cũ
+
+    // Khôi phục hiển thị phiên âm (IPA)
+    if (phoneticEl && word?.en) {
+        getPhoneticCached(word.en).then(phon => {
+            if (currentData?.vocab?.[currentIndex]?.en === word.en) {
+                phoneticEl.innerText = phon || '';
+            }
+        });
+    }
 }
 function toggleMic() {
     if(!recognition) { alert("Lỗi Mic"); return; }
@@ -218,7 +338,18 @@ function toggleMic() {
         const correctWord = currentData.vocab[currentIndex].en;
         const res = await fetch('/api/check', {
             method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ mode: 'speaking', user_answer: userSaid, correct_answer: correctWord })
+            body: JSON.stringify({
+                mode: 'speaking',
+                user_answer: userSaid,
+                correct_answer: correctWord,
+                question_text: correctWord,
+                context: {
+                    gradeId: currentGradeId,
+                    topicId: currentTopicId,
+                    category: 'speaking',
+                    itemId: currentIndex,
+                },
+            })
         });
         const result = await res.json();
         
@@ -305,15 +436,28 @@ function setWritingMode(mode) {
 }
 async function checkWriting() {
     const input = document.getElementById('write-input').value;
-    const payload = { mode: 'writing', user_answer: input, correct_answer: '' };
+    const payload = {
+        mode: 'writing',
+        user_answer: input,
+        correct_answer: '',
+        question_text: '',
+        context: {
+            gradeId: currentGradeId,
+            topicId: currentTopicId,
+            category: writingMode === 'grammar' ? 'grammar' : 'writing',
+            itemId: writingMode === 'grammar' ? grammarIndex : currentIndex,
+        },
+    };
 
     if (writingMode === 'grammar') {
         const hasGrammar = Array.isArray(currentData?.grammar) && currentData.grammar.length > 0;
         if (!hasGrammar) return;
         payload.mode = 'grammar';
         payload.correct_answer = currentData.grammar[grammarIndex].answer;
+        payload.question_text = currentData.grammar[grammarIndex].prompt_vi;
     } else {
         payload.correct_answer = currentData.vocab[currentIndex].en;
+        payload.question_text = currentData.vocab[currentIndex].vi;
     }
 
     const res = await fetch('/api/check', {
@@ -367,21 +511,303 @@ function nextWrite() {
 // Quiz Logic
 function renderQuiz() {
     const container = document.getElementById('quiz-container');
-    if(!Array.isArray(currentData.quiz) || currentData.quiz.length === 0) { container.innerHTML = "Chưa có quiz"; return; }
-    let html = currentData.quiz.map((q, idx) => `
-        <div class="p-4 border border-slate-200 rounded-xl bg-slate-50">
-            <p class="font-bold mb-3">Câu ${idx+1}: ${q.question}</p>
-            <div class="grid grid-cols-1 gap-2">
-                ${q.options.map(opt => `<button onclick="checkQuiz(this, ${idx}, '${opt}', '${q.answer}')" class="quiz-opt-btn w-full text-left px-4 py-2 bg-white rounded-lg border hover:border-blue-400">${opt}</button>`).join('')}
+    const hasQuiz = Array.isArray(currentData?.quiz) && currentData.quiz.length > 0;
+    const hasVocab = Array.isArray(currentData?.vocab) && currentData.vocab.length > 0;
+    if (!hasQuiz && !hasVocab) {
+        container.innerHTML = "Chưa có bài kiểm tra";
+        return;
+    }
+
+    let html = '';
+
+    // --- Trắc nghiệm ---
+    if (hasQuiz) {
+        html += currentData.quiz.map((q, qIdx) => {
+            const questionHtml = escapeHtml(q.question);
+            const opts = Array.isArray(q.options) ? q.options : [];
+            const optsHtml = opts.map((opt, optIdx) => {
+                return `<button type="button" data-quiz-q="${qIdx}" data-quiz-opt="${optIdx}" class="quiz-opt-btn w-full text-left px-4 py-2 bg-white rounded-lg border hover:border-blue-400">${escapeHtml(opt)}</button>`;
+            }).join('');
+
+            return `
+                <div class="p-4 border border-slate-200 rounded-xl bg-slate-50">
+                    <p class="font-bold mb-3">Câu ${qIdx + 1}: ${questionHtml}</p>
+                    <div class="grid grid-cols-1 gap-2">${optsHtml}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // --- Điền chữ còn thiếu (gõ trực tiếp vào chữ bị thiếu) ---
+    if (hasVocab) {
+        html += `
+            <div class="p-4 border border-slate-200 rounded-xl bg-white">
+                <div class="font-black text-slate-800 mb-3">Điền chữ còn thiếu</div>
+                <div class="space-y-4">
+                    ${currentData.vocab.map((w, idx) => `
+                        <div class="p-4 border border-slate-200 rounded-xl bg-slate-50">
+                            <div class="text-sm text-slate-600 font-bold mb-2">${w.vi}</div>
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div id="ml-word-${idx}" class="text-2xl font-black text-slate-800 tracking-wider"></div>
+                                <button type="button" id="ml-btn-${idx}" data-ml-check="${idx}" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Kiểm tra</button>
+                            </div>
+                            <div id="ml-feedback-${idx}" class="mt-2 text-sm font-bold"></div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
-        </div>`).join('');
+        `;
+    }
+
     html += `<button onclick="finishQuiz()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl mt-4">Nộp Bài</button>`;
     container.innerHTML = html;
     document.getElementById('quiz-result').classList.add('hidden');
     container.classList.remove('hidden');
+
+    // Render chữ bị thiếu sau khi DOM đã có
+    if (hasVocab) {
+        currentData.vocab.forEach((w, idx) => {
+            const mount = document.getElementById(`ml-word-${idx}`);
+            if (!mount) return;
+            mount.innerHTML = buildMissingLettersHtml(String(w.en || ''), idx);
+        });
+    }
+
+    initTestEventDelegation();
 }
-async function checkQuiz(btn, questionIndex, userChoice, correctAns) {
-    const res = await fetch('/api/check', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ mode: 'quiz', user_answer: userChoice, correct_answer: correctAns }) });
+
+function initTestEventDelegation() {
+    const container = document.getElementById('quiz-container');
+    if (!container || container.dataset.handlersAttached === '1') return;
+
+    container.addEventListener('click', (e) => {
+        const quizBtn = e.target.closest('button[data-quiz-q]');
+        if (quizBtn) {
+            const qIdx = Number(quizBtn.getAttribute('data-quiz-q'));
+            const optIdx = Number(quizBtn.getAttribute('data-quiz-opt'));
+            if (Number.isFinite(qIdx) && Number.isFinite(optIdx)) {
+                checkQuiz(quizBtn, qIdx, optIdx);
+            }
+            return;
+        }
+
+        const missingBtn = e.target.closest('button[data-ml-check]');
+        if (missingBtn) {
+            const idx = Number(missingBtn.getAttribute('data-ml-check'));
+            if (Number.isFinite(idx)) {
+                checkMissingLetters(idx);
+            }
+        }
+    });
+
+    container.dataset.handlersAttached = '1';
+}
+
+function pickMissingLetterPositions(word) {
+    // Chỉ chọn ký tự chữ cái (A-Z). Không chọn khoảng trắng/ký tự đặc biệt.
+    const chars = Array.from(word);
+    const letterPositions = [];
+    for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
+        if (/[a-zA-Z]/.test(c)) letterPositions.push(i);
+    }
+    if (letterPositions.length <= 2) return new Set();
+
+    // Không ẩn chữ đầu và chữ cuối (nếu là chữ cái)
+    const allowed = letterPositions.slice(1, -1);
+    if (allowed.length <= 0) return new Set();
+
+    // Số lượng chữ bị thiếu: tối thiểu 1, tối đa 3, theo độ dài
+    const target = Math.max(1, Math.min(3, Math.floor(letterPositions.length / 3)));
+
+    // Chọn ngẫu nhiên nhưng ổn định theo index (dùng seed đơn giản)
+    // Để mỗi lần render không đổi quá nhiều gây khó chịu
+    let seed = 0;
+    for (const ch of word) seed = (seed + ch.charCodeAt(0)) % 997;
+
+    const picked = new Set();
+    let tries = 0;
+    while (picked.size < target && tries < 50) {
+        const pos = allowed[(seed + tries * 17) % allowed.length];
+        picked.add(pos);
+        tries++;
+    }
+    return picked;
+}
+
+function buildMissingLettersHtml(word, wordIndex) {
+    const chars = Array.from(word);
+    const missing = pickMissingLetterPositions(word);
+
+    const parts = [];
+    for (let i = 0; i < chars.length; i++) {
+        const c = chars[i];
+        if (missing.has(i)) {
+            parts.push(`<input data-ml-idx="${wordIndex}" data-ml-pos="${i}" maxlength="1" inputmode="text" autocomplete="off" class="w-7 h-9 text-center border-2 border-slate-200 rounded-md outline-none focus:border-blue-500 bg-white font-black" oninput="onMissingLetterInput(event)" onkeydown="onMissingLetterKeyDown(event)" />`);
+        } else {
+            // Giữ nguyên khoảng trắng
+            if (c === ' ') {
+                parts.push(`<span class="inline-block w-3"></span>`);
+            } else {
+                parts.push(`<span class="inline-block px-0.5">${escapeHtml(c)}</span>`);
+            }
+        }
+    }
+
+    return `<div class="flex items-end flex-wrap gap-1">${parts.join('')}</div>`;
+}
+
+function escapeHtml(s) {
+    return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function onMissingLetterInput(e) {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    // Chỉ lấy 1 ký tự cuối
+    if (input.value.length > 1) input.value = input.value.slice(-1);
+
+    // Auto focus sang ô tiếp theo
+    const idx = input.getAttribute('data-ml-idx');
+    const pos = input.getAttribute('data-ml-pos');
+    if (idx == null || pos == null) return;
+
+    const inputs = Array.from(document.querySelectorAll(`input[data-ml-idx="${idx}"]`));
+    inputs.sort((a, b) => Number(a.getAttribute('data-ml-pos')) - Number(b.getAttribute('data-ml-pos')));
+    const curIndex = inputs.indexOf(input);
+    if (curIndex >= 0 && curIndex < inputs.length - 1 && input.value) {
+        inputs[curIndex + 1].focus();
+        inputs[curIndex + 1].select();
+    }
+}
+
+function onMissingLetterKeyDown(e) {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (e.key !== 'Backspace' || input.value) return;
+
+    const idx = input.getAttribute('data-ml-idx');
+    if (idx == null) return;
+
+    const inputs = Array.from(document.querySelectorAll(`input[data-ml-idx="${idx}"]`));
+    inputs.sort((a, b) => Number(a.getAttribute('data-ml-pos')) - Number(b.getAttribute('data-ml-pos')));
+    const curIndex = inputs.indexOf(input);
+    if (curIndex > 0) {
+        inputs[curIndex - 1].focus();
+        inputs[curIndex - 1].select();
+    }
+}
+
+async function checkMissingLetters(wordIndex) {
+    const feedbackEl = document.getElementById(`ml-feedback-${wordIndex}`);
+    const mount = document.getElementById(`ml-word-${wordIndex}`);
+    if (!feedbackEl || !mount) return;
+
+    const correctWord = currentData?.vocab?.[wordIndex]?.en;
+    if (!correctWord) return;
+
+    const original = String(correctWord || '');
+    const chars = Array.from(original);
+    const inputs = Array.from(mount.querySelectorAll('input[data-ml-idx]'));
+    const byPos = new Map();
+    for (const inp of inputs) {
+        const pos = Number(inp.getAttribute('data-ml-pos'));
+        byPos.set(pos, String(inp.value || '').trim());
+    }
+
+    // Ghép đáp án
+    let answer = '';
+    for (let i = 0; i < chars.length; i++) {
+        if (byPos.has(i)) {
+            answer += byPos.get(i) || '';
+        } else {
+            answer += chars[i];
+        }
+    }
+
+    // Luôn gọi backend để chấm (đúng/sai) + đồng bộ logic "đúng rồi thì không cộng lại"
+    try {
+        const res = await fetch('/api/check', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                mode: 'writing',
+                user_answer: answer,
+                correct_answer: original,
+                question_text: original,
+                context: {
+                    gradeId: currentGradeId,
+                    topicId: currentTopicId,
+                    category: 'missing',
+                    itemId: wordIndex,
+                },
+            })
+        });
+        const result = await res.json();
+
+        feedbackEl.innerHTML = result.message || (result.is_correct ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!');
+        feedbackEl.className = result.is_correct
+            ? 'mt-2 text-sm font-bold text-green-600'
+            : 'mt-2 text-sm font-bold text-red-500';
+
+        if (result.is_correct) {
+            if (!result.already_correct) {
+                awardTopicPointsOnce('missing', wordIndex);
+            }
+            for (const inp of inputs) inp.disabled = true;
+            const btn = document.getElementById(`ml-btn-${wordIndex}`);
+            if (btn) btn.disabled = true;
+            playTTS(original);
+        }
+    } catch {
+        // Fallback khi lỗi mạng: vẫn chấm local
+        const ok = answer.toLowerCase() === original.toLowerCase();
+        feedbackEl.innerText = ok ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!';
+        feedbackEl.className = ok
+            ? 'mt-2 text-sm font-bold text-green-600'
+            : 'mt-2 text-sm font-bold text-red-500';
+        if (ok) {
+            awardTopicPointsOnce('missing', wordIndex);
+            for (const inp of inputs) inp.disabled = true;
+            const btn = document.getElementById(`ml-btn-${wordIndex}`);
+            if (btn) btn.disabled = true;
+            playTTS(original);
+        }
+    }
+}
+async function checkQuiz(btn, questionIndex, userChoice, correctAns, questionText) {
+    // Backward compatibility if old signature is used
+    if (typeof userChoice === 'number' && typeof correctAns === 'undefined') {
+        const optIndex = userChoice;
+        const q = currentData?.quiz?.[questionIndex];
+        if (!q || !Array.isArray(q.options)) return;
+        const choiceText = String(q.options[optIndex] ?? '').trim();
+        const correctText = String(q.answer ?? '').trim();
+        const qText = String(q.question ?? '').trim();
+        return checkQuiz(btn, questionIndex, choiceText, correctText, qText);
+    }
+
+    const res = await fetch('/api/check', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            mode: 'quiz',
+            user_answer: userChoice,
+            correct_answer: correctAns,
+            question_text: questionText,
+            context: {
+                gradeId: currentGradeId,
+                topicId: currentTopicId,
+                category: 'quiz',
+                itemId: questionIndex,
+            },
+        })
+    });
     const result = await res.json();
     const siblings = btn.parentElement.children;
     for(let sib of siblings) { sib.disabled = true; if(sib.innerText.trim() === correctAns) sib.classList.add('bg-green-100', 'border-green-500'); }
@@ -398,8 +824,23 @@ function resetQuiz() { renderQuiz(); }
 
 // Chatbot Logic
 function toggleChat() { 
-    const win = document.getElementById('chat-window'); win.classList.toggle('hidden-chat'); 
-    if(!win.classList.contains('hidden-chat')) document.getElementById('chat-input').focus(); 
+    const win = document.getElementById('chat-window');
+    if (!win) return;
+
+    // If chat is embedded as a panel, keep it visible.
+    if (win.classList.contains('chat-embedded')) {
+        const input = document.getElementById('chat-input');
+        if (input) input.focus();
+        ensureDefaultChatActions();
+        return;
+    }
+
+    win.classList.toggle('hidden-chat');
+    if(!win.classList.contains('hidden-chat')) {
+        const input = document.getElementById('chat-input');
+        if (input) input.focus();
+        ensureDefaultChatActions();
+    }
 }
 async function sendChat() {
     const input = document.getElementById('chat-input');
@@ -408,13 +849,13 @@ async function sendChat() {
     appendMsg(msg, 'bg-blue-600 text-white self-end');
     input.value = '';
     try {
-        const res = await fetch('/api/chat', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ message: msg }) });
-        const data = await res.json();
-        appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
-        if(data.reply.includes("🇬🇧")) {
-                const englishText = data.reply.split("<b>")[1].split("</b>")[0];
-                playTTS(englishText);
+        const data = await sendChatPayload(msg);
+        const botDiv = appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
+        if (data && typeof data === 'object' && data.missing) {
+            initChatEventDelegation();
+            hydrateChatMissingUI(botDiv, data.missing);
         }
+        renderChatActions(data.actions);
     } catch(e) { appendMsg("Lỗi mạng", 'bg-red-100 text-red-600'); }
 }
 function appendMsg(text, cls) {
@@ -423,4 +864,368 @@ function appendMsg(text, cls) {
     div.innerHTML = text;
     document.getElementById('chat-messages').appendChild(div);
     document.getElementById('chat-messages').scrollTop = 9999;
+    return div;
 }
+
+let CHAT_MISSING_UID = 0;
+const CHAT_MISSING_STATE = new Map();
+
+function initChatEventDelegation() {
+    const container = document.getElementById('chat-messages');
+    if (!container || container.dataset.chatHandlersAttached === '1') return;
+
+    container.addEventListener('click', async (e) => {
+        const ttsBtn = e.target.closest('button[data-chat-ml-tts]');
+        if (ttsBtn) {
+            const id = String(ttsBtn.getAttribute('data-chat-ml-tts') || '').trim();
+            const st = CHAT_MISSING_STATE.get(id);
+            if (st && st.word) playTTS(st.word);
+            return;
+        }
+
+        const checkBtn = e.target.closest('button[data-chat-ml-check]');
+        if (checkBtn) {
+            const id = String(checkBtn.getAttribute('data-chat-ml-check') || '').trim();
+            if (!id) return;
+            const card = checkBtn.closest('[data-chat-ml-card]');
+            if (!card) return;
+            await checkChatMissingLetters(card, id);
+        }
+    });
+
+    container.dataset.chatHandlersAttached = '1';
+}
+
+function hydrateChatMissingUI(botMsgDiv, missing) {
+    if (!botMsgDiv || !missing || typeof missing !== 'object') return;
+
+    const word = String(missing.en || '').trim();
+    const vi = String(missing.vi || '').trim();
+    const vocabIndex = Number(missing.vocabIndex);
+    if (!word) return;
+
+    const mount = botMsgDiv.querySelector('[data-chat-missing-mount="1"]');
+    if (!mount) return;
+
+    const id = `chatml_${++CHAT_MISSING_UID}`;
+    CHAT_MISSING_STATE.set(id, {
+        word,
+        vi,
+        vocabIndex: Number.isFinite(vocabIndex) ? vocabIndex : null,
+    });
+
+    mount.innerHTML = `
+        <div data-chat-ml-card="1" class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="text-sm text-slate-600 font-bold mb-2">${escapeHtml(vi)}</div>
+            <div class="mb-3">${buildMissingLettersHtml(word, id)}</div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <button type="button" data-chat-ml-check="${escapeHtml(id)}" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Kiểm tra</button>
+                <button type="button" data-chat-ml-tts="${escapeHtml(id)}" class="px-3 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-50">Nghe mẫu</button>
+            </div>
+            <div data-chat-ml-feedback="${escapeHtml(id)}" class="mt-2 text-sm font-bold"></div>
+        </div>
+    `;
+}
+
+async function checkChatMissingLetters(cardEl, id) {
+    const st = CHAT_MISSING_STATE.get(id);
+    if (!st) return;
+
+    const feedbackEl = cardEl.querySelector(`[data-chat-ml-feedback="${id}"]`);
+    const checkBtn = cardEl.querySelector(`button[data-chat-ml-check="${id}"]`);
+    const inputs = Array.from(cardEl.querySelectorAll(`input[data-ml-idx="${id}"]`));
+    if (!feedbackEl || inputs.length === 0) return;
+
+    const original = String(st.word || '');
+    const chars = Array.from(original);
+    const byPos = new Map();
+    for (const inp of inputs) {
+        const pos = Number(inp.getAttribute('data-ml-pos'));
+        byPos.set(pos, String(inp.value || '').trim());
+    }
+
+    let answer = '';
+    for (let i = 0; i < chars.length; i++) {
+        if (byPos.has(i)) answer += byPos.get(i) || '';
+        else answer += chars[i];
+    }
+
+    try {
+        const res = await fetch('/api/check', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                mode: 'writing',
+                user_answer: answer,
+                correct_answer: original,
+                question_text: original,
+                context: {
+                    gradeId: currentGradeId,
+                    topicId: currentTopicId,
+                    category: 'missing',
+                    itemId: st.vocabIndex,
+                },
+            })
+        });
+
+        const result = await res.json();
+        feedbackEl.innerHTML = result.message || (result.is_correct ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!');
+        feedbackEl.className = result.is_correct
+            ? 'mt-2 text-sm font-bold text-green-600'
+            : 'mt-2 text-sm font-bold text-red-500';
+
+        if (result.is_correct) {
+            if (!result.already_correct && Number.isFinite(st.vocabIndex)) {
+                awardTopicPointsOnce('missing', st.vocabIndex);
+            }
+            for (const inp of inputs) inp.disabled = true;
+            if (checkBtn) checkBtn.disabled = true;
+            playTTS(original);
+        }
+    } catch {
+        feedbackEl.textContent = 'Lỗi mạng';
+        feedbackEl.className = 'mt-2 text-sm font-bold text-red-500';
+    }
+}
+
+// --- Chatbot Learning UI ---
+const CHAT_CLIENT_ID_KEY = 'robo_chat_client_id_v1';
+
+function getChatClientId() {
+    try {
+        const existing = localStorage.getItem(CHAT_CLIENT_ID_KEY);
+        if (existing && String(existing).trim()) return String(existing).trim();
+    } catch {}
+
+    let id = '';
+    try {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            id = window.crypto.randomUUID();
+        }
+    } catch {}
+    if (!id) {
+        id = `cid_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    }
+
+    try { localStorage.setItem(CHAT_CLIENT_ID_KEY, id); } catch {}
+    return id;
+}
+
+function renderChatActions(actions) {
+    const container = document.getElementById('chat-actions');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!Array.isArray(actions) || actions.length === 0) return;
+
+    for (const a of actions) {
+        if (!a || typeof a !== 'object') continue;
+        const action = String(a.action || '').trim();
+        const label = String(a.label || '').trim();
+        const target = (typeof a.target === 'undefined') ? '' : String(a.target);
+        if (!action || !label) continue;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chat-action-btn';
+        btn.textContent = label;
+        btn.dataset.action = action;
+        btn.dataset.target = target;
+        btn.onclick = () => handleChatAction(action, target);
+        container.appendChild(btn);
+    }
+}
+
+function actionToMessage(action) {
+    switch (action) {
+        case 'start_vocab': return 'từ vựng';
+        case 'start_grammar': return 'ngữ pháp';
+        case 'start_pronounce': return 'phát âm';
+        case 'start_missing': return 'điền chữ';
+        case 'start_quiz': return 'kiểm tra';
+        case 'translate': return 'dịch';
+        case 'stop': return 'stop';
+        default: return '';
+    }
+}
+
+async function sendChatPayload(message) {
+    const clientId = getChatClientId();
+    const payload = {
+        message,
+        client_id: clientId,
+        context: {
+            gradeId: currentGradeId,
+            topicId: currentTopicId,
+        }
+    };
+    const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return await res.json();
+}
+
+function runSpeechOnce(onResult, onError) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        onError && onError(new Error('SpeechRecognition not supported'));
+        return;
+    }
+    const r = new SR();
+    r.lang = 'en-US';
+    r.continuous = false;
+    r.interimResults = false;
+    r.onresult = (e) => {
+        try {
+            const transcript = e.results?.[0]?.[0]?.transcript || '';
+            onResult && onResult(String(transcript));
+        } catch (err) {
+            onError && onError(err);
+        }
+    };
+    r.onerror = (e) => onError && onError(e);
+    r.onend = () => {};
+    try { r.start(); } catch (err) { onError && onError(err); }
+}
+
+async function handleChatAction(action, target) {
+    if (action === 'tts') {
+        if (target) playTTS(target);
+        return;
+    }
+    if (action === 'pronounce_mic') {
+        await startChatPronunciation(target);
+        return;
+    }
+
+    const msg = actionToMessage(action);
+    if (!msg) return;
+
+    // Gửi như một "lệnh" (không append như user chat thường)
+    appendMsg(msg, 'bg-blue-600 text-white self-end');
+    try {
+        const data = await sendChatPayload(msg);
+        const botDiv = appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
+        if (data && typeof data === 'object' && data.missing) {
+            initChatEventDelegation();
+            hydrateChatMissingUI(botDiv, data.missing);
+        }
+        renderChatActions(data.actions);
+    } catch {
+        appendMsg('Lỗi mạng', 'bg-red-100 text-red-600');
+    }
+}
+
+async function startChatPronunciation(targetWord) {
+    const word = String(targetWord || '').trim();
+    if (!word) return;
+
+    appendMsg('🎤 (Bé bấm micro và đọc nhé...)', 'bg-blue-600 text-white self-end');
+
+    runSpeechOnce(async (transcript) => {
+        const userSaid = String(transcript || '').trim();
+        if (!userSaid) {
+            appendMsg('Robo chưa nghe rõ. Bé thử lại nhé!', 'bg-white text-slate-700 self-start border border-slate-200');
+            return;
+        }
+
+        appendMsg(userSaid, 'bg-blue-600 text-white self-end');
+        try {
+            const res = await fetch('/api/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: 'speaking',
+                    user_answer: userSaid,
+                    correct_answer: word,
+                    question_text: word,
+                    context: {
+                        gradeId: currentGradeId,
+                        topicId: currentTopicId,
+                        category: 'chat_pronounce',
+                        itemId: `chat:${word}`,
+                    },
+                })
+            });
+            const result = await res.json();
+            let reply = result.message || '';
+            if (result.suggestion) reply += `<br><small>${result.suggestion}</small>`;
+            appendMsg(reply || 'Ok!', 'bg-white text-slate-700 self-start border border-slate-200');
+        } catch {
+            appendMsg('Lỗi mạng', 'bg-red-100 text-red-600');
+        }
+    }, () => {
+        appendMsg('Trình duyệt không hỗ trợ micro hoặc bị chặn quyền.', 'bg-red-100 text-red-600');
+    });
+}
+
+function ensureDefaultChatActions() {
+    // Hiển thị nút mặc định khi mở chat lần đầu
+    renderChatActions([
+        { action: 'start_vocab', label: 'Luyện từ vựng' },
+        { action: 'start_grammar', label: 'Luyện ngữ pháp' },
+        { action: 'start_pronounce', label: 'Luyện phát âm' },
+        { action: 'translate', label: 'Dịch' },
+        { action: 'start_missing', label: 'Điền chữ' },
+        { action: 'start_quiz', label: 'Kiểm tra' },
+    ]);
+}
+
+// Floating Chat Widget Logic
+function toggleFloatingChat() {
+    const win = document.getElementById('chat-widget-window');
+    if (!win) return;
+    win.classList.toggle('hidden-chat');
+}
+
+function sendWidgetChat() {
+    const input = document.getElementById('chat-widget-input');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (!msg) return;
+    renderWidgetMessage(msg, 'user');
+    input.value = '';
+    // Gửi yêu cầu dịch tới API chat
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: 'dịch ' + msg })
+    })
+    .then(r => r.json())
+    .then(data => {
+        renderWidgetMessage(data.reply || 'Không có phản hồi', 'bot');
+    })
+    .catch(() => {
+        renderWidgetMessage('Lỗi mạng', 'bot');
+    });
+}
+
+function renderWidgetMessage(text, who) {
+    const box = document.getElementById('chat-widget-messages');
+    if (!box) return;
+    const div = document.createElement('div');
+    div.className = 'p-3 rounded-2xl border text-sm shadow-sm mb-2 ' + (who === 'user' ? 'self-end bg-blue-100 border-blue-200 text-blue-800' : 'self-start bg-white border-slate-200 text-slate-700');
+    div.innerHTML = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+}
+
+// Chỉ hiển thị nút bong bóng chat dịch khi đang ở chế độ tự học (screen-learn). Ẩn khi chuyển sang chế độ khác.
+function updateWidgetChatVisibility() {
+    const btn = document.getElementById('chat-widget-btn');
+    const win = document.getElementById('chat-widget-window');
+    const learnScreen = document.getElementById('screen-learn');
+    if (!btn || !win || !learnScreen) return;
+    const isLearnVisible = !learnScreen.classList.contains('hidden');
+    btn.style.display = isLearnVisible ? 'flex' : 'none';
+    if (!isLearnVisible) win.classList.add('hidden-chat');
+}
+
+// Patch showScreen to update widget visibility
+const _origShowScreen = window.showScreen;
+window.showScreen = function(name) {
+    if (typeof _origShowScreen === 'function') _origShowScreen(name);
+    updateWidgetChatVisibility();
+};
+window.addEventListener('DOMContentLoaded', updateWidgetChatVisibility);

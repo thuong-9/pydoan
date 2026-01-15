@@ -26,7 +26,40 @@
         </div>
     </header>
 
-    <main class="container mx-auto p-4 md:p-6 flex-1 max-w-5xl">
+    <main class="container mx-auto p-4 md:p-6 flex-1 max-w-6xl">
+            <section>
+                <div id="screen-mode" class="hidden fade-in">
+                    <button onclick="showScreen('home')" class="mb-4 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition">
+                        <i class="fas fa-arrow-left"></i> Quay lại chọn bài
+                    </button>
+                    <div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-6 md:p-8">
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 text-center">Chọn chế độ học</h2>
+                        <p class="text-center text-slate-500 font-bold mt-2">Chủ đề: <span id="selected-topic-title" class="text-blue-700"></span></p>
+
+                        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button onclick="chooseMode('self')" class="p-5 rounded-2xl border-2 border-blue-100 bg-blue-50 hover:bg-blue-100 transition text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-white text-blue-700 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-book-open"></i></div>
+                                    <div>
+                                        <div class="font-black text-slate-800 text-lg">Tự học</div>
+                                        <div class="text-slate-600 text-sm font-bold">Học từ vựng, luyện nói, luyện viết, kiểm tra.</div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <button onclick="chooseMode('chat')" class="p-5 rounded-2xl border-2 border-slate-100 bg-white hover:bg-slate-50 transition text-left">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl shadow-sm"><i class="fas fa-robot"></i></div>
+                                    <div>
+                                        <div class="font-black text-slate-800 text-lg">Chatbot hỗ trợ học</div>
+                                        <div class="text-slate-600 text-sm font-bold">Hỏi Robo và luyện theo chủ đề đang chọn.</div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
         <div id="screen-home" class="fade-in">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-extrabold text-slate-800">👋 Chào bé yêu 👋</h2>
@@ -36,25 +69,31 @@
         </div>
 
         <div id="screen-learn" class="hidden fade-in">
-            <button onclick="showScreen('home')" class="mb-4 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition">
-                <i class="fas fa-arrow-left"></i> Quay lại chọn bài
-            </button>
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <button onclick="showScreen('home')" class="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition">
+                    <i class="fas fa-arrow-left"></i> Quay lại chọn bài
+                </button>
+                <button onclick="goToModeSelection()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 font-extrabold transition">
+                    <i class="fas fa-exchange-alt mr-2"></i> Đổi chế độ
+                </button>
+            </div>
             <h2 id="current-topic-title" class="text-3xl font-extrabold text-blue-700 mb-6 text-center">...</h2>
 
-            <div class="bg-white rounded-t-2xl shadow-sm border-b border-slate-200 flex flex-wrap justify-center md:justify-start">
+            <div id="self-learning-tabs" class="bg-white rounded-t-2xl shadow-sm border-b border-slate-200 flex flex-wrap justify-center md:justify-start">
                 <button onclick="switchTab('vocab')" id="btn-vocab" class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold flex items-center justify-center gap-2 tab-active"><i class="fas fa-book-open"></i> Học Từ Vựng</button>
                 <button onclick="switchTab('speaking')" id="btn-speaking" class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold flex items-center justify-center gap-2"><i class="fas fa-microphone-alt"></i> Luyện Nói</button>
                 <button onclick="switchTab('writing')" id="btn-writing" class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold flex items-center justify-center gap-2"><i class="fas fa-pen"></i> Luyện Viết</button>
                 <button onclick="switchTab('test')" id="btn-test" class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold flex items-center justify-center gap-2"><i class="fas fa-clipboard-check"></i> Kiểm Tra</button>
             </div>
 
-            <div class="bg-white p-6 md:p-8 rounded-b-2xl shadow-xl min-h-[450px] relative">
+            <div id="self-learning-content" class="bg-white p-6 md:p-8 rounded-b-2xl shadow-xl min-h-[450px] relative">
                 <div id="tab-content-vocab" class="tab-content"><div id="content-vocab" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div></div>
 
                 <div id="tab-content-speaking" class="tab-content hidden">
                     <div id="content-speaking" class="flex flex-col items-center justify-center text-center py-6">
                         <div class="text-8xl mb-4 animate-bounce" id="speak-img"></div>
                         <h3 class="text-5xl font-black text-slate-800 mb-2" id="speak-word">WORD</h3>
+                        <p class="text-lg text-slate-500 font-bold mb-1" id="speak-phonetic"></p>
                         <p class="text-xl text-slate-400 font-medium mb-6" id="speak-meaning">nghĩa</p>
                         
                         <button onclick="playTTS(document.getElementById('speak-word').innerText)" class="mb-6 text-blue-500 hover:text-blue-700 font-bold flex items-center gap-2"><i class="fas fa-volume-up"></i> Nghe mẫu</button>
@@ -107,24 +146,46 @@
                 </div>
             </div>
         </div>
-    </main>
+            </section>
 
-    <div id="chat-window" class="chat-window hidden-chat">
-        <div class="bg-blue-600 p-3 flex justify-between items-center text-white">
-            <div class="flex items-center gap-2 font-bold"><i class="fas fa-robot"></i> Trợ lý Robo</div>
-            <button onclick="toggleChat()" class="hover:text-blue-200"><i class="fas fa-times"></i></button>
+            <aside id="chat-panel" class="hidden bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+                <div class="bg-blue-600 p-3 flex items-center gap-2 text-white font-black">
+                    <i class="fas fa-robot"></i>
+                    <span>Chatbot hỗ trợ học</span>
+                    
+                </div>
+                <div id="chat-window" class="chat-window chat-embedded">
+                    <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-2">
+                        <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 text-slate-700 text-sm shadow-sm self-start">
+                            Chào bé! Robo sẽ luyện <b>từ vựng</b>, <b>ngữ pháp</b>, và <b>phát âm</b> với bé nhé! 🤖
+                        </div>
+                    </div>
+                    <div id="chat-actions" class="px-3 pt-3 bg-white border-t border-slate-100 flex flex-wrap gap-2"></div>
+                    <div class="p-3 bg-white border-t border-slate-100 flex gap-2">
+                        <input type="text" id="chat-input" class="flex-1 px-3 py-2 bg-slate-100 rounded-full text-sm outline-none focus:ring-1 focus:ring-blue-500" placeholder="Hỏi Robo..." onkeypress="if(event.key==='Enter') sendChat()">
+                        <button onclick="sendChat()" class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fas fa-paper-plane text-xs"></i></button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Chat Widget Button (bottom right) -->
+    <div id="chat-widget-btn" class="chat-widget-btn" onclick="toggleFloatingChat()">
+        <i class="fas fa-comment-dots"></i>
+    </div>
+    <!-- Floating Chat Window -->
+    <div id="chat-widget-window" class="chat-window hidden-chat">
+        <div class="bg-blue-600 p-3 flex items-center gap-2 text-white font-black">
+            <i class="fas fa-robot"></i>
+            <span>Hỗ trợ dịch</span>
+            <button onclick="toggleFloatingChat()" style="margin-left:auto" class="bg-blue-700 px-2 py-1 rounded-full text-xs">Đóng</button>
         </div>
-        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-2">
-            <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 text-slate-700 text-sm shadow-sm self-start">
-                Chào bé! Bé cần dịch từ gì cứ nhắn nhé! 🤖
-            </div>
-        </div>
+        <div id="chat-widget-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 flex flex-col gap-2"></div>
         <div class="p-3 bg-white border-t border-slate-100 flex gap-2">
-            <input type="text" id="chat-input" class="flex-1 px-3 py-2 bg-slate-100 rounded-full text-sm outline-none focus:ring-1 focus:ring-blue-500" placeholder="Hỏi Robo..." onkeypress="if(event.key==='Enter') sendChat()">
-            <button onclick="sendChat()" class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fas fa-paper-plane text-xs"></i></button>
+            <input type="text" id="chat-widget-input" class="flex-1 px-3 py-2 bg-slate-100 rounded-full text-sm outline-none focus:ring-1 focus:ring-blue-500" placeholder="Nhập từ/câu cần dịch..." onkeypress="if(event.key==='Enter') sendWidgetChat()">
+            <button onclick="sendWidgetChat()" class="w-9 h-9 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fas fa-paper-plane text-xs"></i></button>
         </div>
     </div>
-    <div onclick="toggleChat()" class="chat-widget-btn animate-bounce"><i class="fas fa-comment-dots"></i></div>
+    </main>
     <script src="/static/app.js"></script>
 </body>
 </html>
