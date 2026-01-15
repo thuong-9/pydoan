@@ -121,7 +121,7 @@ Yêu cầu Python 3.x.
 
 Cài các thư viện (gợi ý):
 ```bash
-pip install flask googletrans==4.0.0-rc1 gTTS sentence-transformers language-tool-python
+pip install flask deep-translator gTTS sentence-transformers language-tool-python
 ```
 
 Ghi chú:
@@ -139,13 +139,4 @@ Mở trình duyệt tại: `http://127.0.0.1:5000/`
 - Lịch sử làm bài: lưu ở [learning_history.json](learning_history.json) theo bản ghi:
   - `timestamp`, `mode`, `question`, `question_id`, `context`, `user_answer`, `score`, `base_score`, `counted`, `result`.
 
-## 9) Giới hạn & lưu ý kỹ thuật
-- Chấm nói/viết câu dựa vào **độ tương đồng embedding**, không đảm bảo đánh giá phát âm/grammar chuẩn như hệ thống chuyên dụng.
-- Phiên âm phụ thuộc dịch vụ `dictionaryapi.dev` (cần internet).
-- TTS dùng gTTS (cần internet).
-- Chatbot có thể dùng googletrans cho chức năng dịch (cần internet, đôi khi có thể bị giới hạn).
-- Luyện phát âm trong chatbot phụ thuộc trình duyệt hỗ trợ `SpeechRecognition` (Chrome/Edge thường hỗ trợ; một số trình duyệt có thể không có).
 
----
-
-Nếu bạn muốn, mình có thể bổ sung thêm phần “Sơ đồ API” (request/response mẫu) cho từng endpoint trong README.

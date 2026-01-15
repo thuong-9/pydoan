@@ -850,7 +850,11 @@ async function sendChat() {
     input.value = '';
     try {
         const data = await sendChatPayload(msg);
-        appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
+        const botDiv = appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
+        if (data && typeof data === 'object' && data.missing) {
+            initChatEventDelegation();
+            hydrateChatMissingUI(botDiv, data.missing);
+        }
         renderChatActions(data.actions);
     } catch(e) { appendMsg("Lỗi mạng", 'bg-red-100 text-red-600'); }
 }
@@ -860,6 +864,128 @@ function appendMsg(text, cls) {
     div.innerHTML = text;
     document.getElementById('chat-messages').appendChild(div);
     document.getElementById('chat-messages').scrollTop = 9999;
+    return div;
+}
+
+let CHAT_MISSING_UID = 0;
+const CHAT_MISSING_STATE = new Map();
+
+function initChatEventDelegation() {
+    const container = document.getElementById('chat-messages');
+    if (!container || container.dataset.chatHandlersAttached === '1') return;
+
+    container.addEventListener('click', async (e) => {
+        const ttsBtn = e.target.closest('button[data-chat-ml-tts]');
+        if (ttsBtn) {
+            const id = String(ttsBtn.getAttribute('data-chat-ml-tts') || '').trim();
+            const st = CHAT_MISSING_STATE.get(id);
+            if (st && st.word) playTTS(st.word);
+            return;
+        }
+
+        const checkBtn = e.target.closest('button[data-chat-ml-check]');
+        if (checkBtn) {
+            const id = String(checkBtn.getAttribute('data-chat-ml-check') || '').trim();
+            if (!id) return;
+            const card = checkBtn.closest('[data-chat-ml-card]');
+            if (!card) return;
+            await checkChatMissingLetters(card, id);
+        }
+    });
+
+    container.dataset.chatHandlersAttached = '1';
+}
+
+function hydrateChatMissingUI(botMsgDiv, missing) {
+    if (!botMsgDiv || !missing || typeof missing !== 'object') return;
+
+    const word = String(missing.en || '').trim();
+    const vi = String(missing.vi || '').trim();
+    const vocabIndex = Number(missing.vocabIndex);
+    if (!word) return;
+
+    const mount = botMsgDiv.querySelector('[data-chat-missing-mount="1"]');
+    if (!mount) return;
+
+    const id = `chatml_${++CHAT_MISSING_UID}`;
+    CHAT_MISSING_STATE.set(id, {
+        word,
+        vi,
+        vocabIndex: Number.isFinite(vocabIndex) ? vocabIndex : null,
+    });
+
+    mount.innerHTML = `
+        <div data-chat-ml-card="1" class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="text-sm text-slate-600 font-bold mb-2">${escapeHtml(vi)}</div>
+            <div class="mb-3">${buildMissingLettersHtml(word, id)}</div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <button type="button" data-chat-ml-check="${escapeHtml(id)}" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Kiểm tra</button>
+                <button type="button" data-chat-ml-tts="${escapeHtml(id)}" class="px-3 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg hover:bg-slate-50">Nghe mẫu</button>
+            </div>
+            <div data-chat-ml-feedback="${escapeHtml(id)}" class="mt-2 text-sm font-bold"></div>
+        </div>
+    `;
+}
+
+async function checkChatMissingLetters(cardEl, id) {
+    const st = CHAT_MISSING_STATE.get(id);
+    if (!st) return;
+
+    const feedbackEl = cardEl.querySelector(`[data-chat-ml-feedback="${id}"]`);
+    const checkBtn = cardEl.querySelector(`button[data-chat-ml-check="${id}"]`);
+    const inputs = Array.from(cardEl.querySelectorAll(`input[data-ml-idx="${id}"]`));
+    if (!feedbackEl || inputs.length === 0) return;
+
+    const original = String(st.word || '');
+    const chars = Array.from(original);
+    const byPos = new Map();
+    for (const inp of inputs) {
+        const pos = Number(inp.getAttribute('data-ml-pos'));
+        byPos.set(pos, String(inp.value || '').trim());
+    }
+
+    let answer = '';
+    for (let i = 0; i < chars.length; i++) {
+        if (byPos.has(i)) answer += byPos.get(i) || '';
+        else answer += chars[i];
+    }
+
+    try {
+        const res = await fetch('/api/check', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                mode: 'writing',
+                user_answer: answer,
+                correct_answer: original,
+                question_text: original,
+                context: {
+                    gradeId: currentGradeId,
+                    topicId: currentTopicId,
+                    category: 'missing',
+                    itemId: st.vocabIndex,
+                },
+            })
+        });
+
+        const result = await res.json();
+        feedbackEl.innerHTML = result.message || (result.is_correct ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!');
+        feedbackEl.className = result.is_correct
+            ? 'mt-2 text-sm font-bold text-green-600'
+            : 'mt-2 text-sm font-bold text-red-500';
+
+        if (result.is_correct) {
+            if (!result.already_correct && Number.isFinite(st.vocabIndex)) {
+                awardTopicPointsOnce('missing', st.vocabIndex);
+            }
+            for (const inp of inputs) inp.disabled = true;
+            if (checkBtn) checkBtn.disabled = true;
+            playTTS(original);
+        }
+    } catch {
+        feedbackEl.textContent = 'Lỗi mạng';
+        feedbackEl.className = 'mt-2 text-sm font-bold text-red-500';
+    }
 }
 
 // --- Chatbot Learning UI ---
@@ -914,6 +1040,9 @@ function actionToMessage(action) {
         case 'start_vocab': return 'từ vựng';
         case 'start_grammar': return 'ngữ pháp';
         case 'start_pronounce': return 'phát âm';
+        case 'start_missing': return 'điền chữ';
+        case 'start_quiz': return 'kiểm tra';
+        case 'translate': return 'dịch';
         case 'stop': return 'stop';
         default: return '';
     }
@@ -977,7 +1106,11 @@ async function handleChatAction(action, target) {
     appendMsg(msg, 'bg-blue-600 text-white self-end');
     try {
         const data = await sendChatPayload(msg);
-        appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
+        const botDiv = appendMsg(data.reply, 'bg-white text-slate-700 self-start border border-slate-200');
+        if (data && typeof data === 'object' && data.missing) {
+            initChatEventDelegation();
+            hydrateChatMissingUI(botDiv, data.missing);
+        }
         renderChatActions(data.actions);
     } catch {
         appendMsg('Lỗi mạng', 'bg-red-100 text-red-600');
@@ -1033,5 +1166,8 @@ function ensureDefaultChatActions() {
         { action: 'start_vocab', label: 'Luyện từ vựng' },
         { action: 'start_grammar', label: 'Luyện ngữ pháp' },
         { action: 'start_pronounce', label: 'Luyện phát âm' },
+        { action: 'translate', label: 'Dịch' },
+        { action: 'start_missing', label: 'Điền chữ' },
+        { action: 'start_quiz', label: 'Kiểm tra' },
     ]);
 }
