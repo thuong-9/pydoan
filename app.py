@@ -1,18 +1,17 @@
+from flask import Flask, render_template, request, jsonify, send_file
+from gtts import gTTS
+from deep_translator import GoogleTranslator
+import re 
 import io
 import json
 import os
-import random
-import re
 import threading
-import urllib.parse
-import urllib.request
-from collections import OrderedDict
-from datetime import datetime
 from difflib import SequenceMatcher
-
-from deep_translator import GoogleTranslator
-from flask import Flask, jsonify, render_template, request, send_file
-from gtts import gTTS
+from datetime import datetime
+import urllib.request
+import urllib.parse
+import random
+from collections import OrderedDict
 
 app = Flask(__name__)
 app.secret_key = 'robo_english_super_secret'
