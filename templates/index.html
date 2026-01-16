@@ -42,7 +42,7 @@
                                     <div class="w-12 h-12 rounded-xl bg-white text-blue-700 flex items-center justify-center text-xl shadow-sm"><i class="fas fa-book-open"></i></div>
                                     <div>
                                         <div class="font-black text-slate-800 text-lg">Tự học</div>
-                                        <div class="text-slate-600 text-sm font-bold">Học từ vựng, luyện nói, luyện viết, kiểm tra.</div>
+                                        <div class="text-slate-600 text-sm font-bold">Học từ vựng, luyện nói, luyện viết, bài tập.</div>
                                     </div>
                                 </div>
                             </button>
@@ -78,6 +78,18 @@
                 </button>
             </div>
             <h2 id="current-topic-title" class="text-3xl font-extrabold text-blue-700 mb-6 text-center">...</h2>
+
+            <div class="flex flex-wrap items-center justify-center gap-2 mb-6">
+                <div id="badge-speaking" class="hidden px-4 py-2 rounded-full bg-slate-100 text-slate-700 font-extrabold">
+                    Luyện nói: <span id="score-speaking" class="text-blue-700">0</span>/25
+                </div>
+                <div id="badge-writing" class="hidden px-4 py-2 rounded-full bg-slate-100 text-slate-700 font-extrabold">
+                    Luyện viết: <span id="score-writing" class="text-orange-700">0</span>/25
+                </div>
+                <div id="badge-test" class="hidden px-4 py-2 rounded-full bg-slate-100 text-slate-700 font-extrabold">
+                    Kiểm tra: <span id="score-test" class="text-green-700">0</span>/50
+                </div>
+            </div>
 
             <div id="self-learning-tabs" class="bg-white rounded-t-2xl shadow-sm border-b border-slate-200 flex flex-wrap justify-center md:justify-start">
                 <button onclick="switchTab('vocab')" id="btn-vocab" class="tab-btn flex-1 md:flex-none px-6 py-4 font-bold flex items-center justify-center gap-2 tab-active"><i class="fas fa-book-open"></i> Học Từ Vựng</button>
@@ -124,12 +136,15 @@
                             <h3 class="text-3xl font-black text-orange-600 mb-6" id="write-meaning">...</h3>
                             <div class="flex gap-2 w-full">
                                 <input type="text" id="write-input" class="flex-1 p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 outline-none text-center text-xl font-bold" placeholder="Nhập đáp án..." onkeypress="if(event.key==='Enter') checkWriting()">
-                                <button onclick="checkWriting()" class="bg-blue-600 text-white px-4 rounded-xl font-bold hover:bg-blue-700 shadow-lg">Gửi</button>
+                                <button id="write-submit-btn" onclick="checkWriting()" class="bg-blue-600 text-white px-4 rounded-xl font-bold hover:bg-blue-700 shadow-lg">Gửi</button>
                             </div>
                             <p id="write-feedback" class="mt-4 font-bold text-xl h-6"></p>
                             <div id="write-suggestion" class="hidden mt-3 text-sm text-slate-600"></div>
                         </div>
-                        <button id="write-next-btn" onclick="nextWrite()" class="mt-6 px-6 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200">Từ tiếp theo <i class="fas fa-arrow-right"></i></button>
+                        <div class="mt-6 flex items-center justify-center gap-3">
+                            <button id="write-prev-btn" onclick="prevWrite()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200">Từ trước <i class="fas fa-arrow-left"></i></button>
+                            <button id="write-next-btn" onclick="nextWrite()" class="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg font-bold hover:bg-slate-200">Từ tiếp theo <i class="fas fa-arrow-right"></i></button>
+                        </div>
                     </div>
                 </div>
 
@@ -139,8 +154,11 @@
                         <div id="quiz-result" class="hidden text-center py-10">
                             <div class="text-8xl mb-4">🏆</div>
                             <h3 class="text-3xl font-black text-slate-800">Hoàn thành!</h3>
-                            <p class="text-xl text-slate-500 mt-2 mb-6">Điểm số: <span id="quiz-score-display" class="font-bold text-blue-600"></span></p>
-                            <button onclick="resetQuiz()" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700">Làm lại bài</button>
+                            <p class="text-xl text-slate-500 mt-2 mb-6">Điểm: <span id="quiz-score-display" class="font-bold text-blue-600"></span>/50</p>
+                            <div class="flex flex-wrap items-center justify-center gap-3">
+                                <button onclick="viewQuizReview()" class="px-6 py-3 bg-white text-slate-700 font-bold rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50">Xem lại bài</button>
+                                <button onclick="resetQuiz()" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700">Làm lại bài</button>
+                            </div>
                         </div>
                     </div>
                 </div>

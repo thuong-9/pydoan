@@ -30,7 +30,122 @@ function getPhoneticCached(word) {
 }
 
 const SCORE_STORAGE_KEY = 'robo_english_scores_v1';
-const TOPIC_MAX_SCORE = 100;
+const ATTEMPT_STORAGE_KEY = 'robo_english_attempts_v1';
+const SCORE_WEIGHTS = {
+    speaking: 25,
+    writing: 25,
+    test: 50,
+};
+const TOPIC_MAX_SCORE = SCORE_WEIGHTS.speaking + SCORE_WEIGHTS.writing + SCORE_WEIGHTS.test;
+
+function loadAttemptState() {
+    try {
+        const raw = localStorage.getItem(ATTEMPT_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : null;
+        if (!parsed || typeof parsed !== 'object') return { topics: {} };
+        if (!parsed.topics || typeof parsed.topics !== 'object') return { topics: {} };
+        return parsed;
+    } catch {
+        return { topics: {} };s 
+    }
+}
+
+function saveAttemptState(state) {
+    try {
+        localStorage.setItem(ATTEMPT_STORAGE_KEY, JSON.stringify(state));
+    } catch {}
+}
+
+function ensureTopicAttempt(state, gradeId, topicId) {
+    if (!state || typeof state !== 'object') state = { topics: {} };
+    if (!state.topics || typeof state.topics !== 'object') state.topics = {};
+
+    const key = getTopicKey(gradeId, topicId);
+    if (!state.topics[key] || typeof state.topics[key] !== 'object') {
+        state.topics[key] = {
+            writing: { vocab: {}, grammar: {} },
+            test: { quiz: {}, missing: {}, finished: false },
+        };
+    }
+
+    const t = state.topics[key];
+    if (!t.writing || typeof t.writing !== 'object') t.writing = { vocab: {}, grammar: {} };
+    if (!t.writing.vocab || typeof t.writing.vocab !== 'object') t.writing.vocab = {};
+    if (!t.writing.grammar || typeof t.writing.grammar !== 'object') t.writing.grammar = {};
+
+    if (!t.test || typeof t.test !== 'object') t.test = { quiz: {}, missing: {}, finished: false };
+    if (!t.test.quiz || typeof t.test.quiz !== 'object') t.test.quiz = {};
+    if (!t.test.missing || typeof t.test.missing !== 'object') t.test.missing = {};
+    if (typeof t.test.finished !== 'boolean') t.test.finished = false;
+
+    return t;
+}
+
+function getOrCreateCurrentTopicAttempt() {
+    if (!currentGradeId || !currentTopicId) return null;
+    const state = loadAttemptState();
+    const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+    saveAttemptState(state);
+    return topicAttempt;
+}
+
+function clearCurrentTopicTestAttempt() {
+    if (!currentGradeId || !currentTopicId) return;
+    const state = loadAttemptState();
+    const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+    topicAttempt.test = { quiz: {}, missing: {}, finished: false };
+    saveAttemptState(state);
+}
+
+function getWritingItemAttempt(topicAttempt, mode, itemId) {
+    if (!topicAttempt) return null;
+    const bucket = (mode === 'grammar') ? topicAttempt.writing.grammar : topicAttempt.writing.vocab;
+    const key = String(itemId);
+    if (!bucket[key] || typeof bucket[key] !== 'object') {
+        bucket[key] = { value: '', result: null };
+    }
+    if (typeof bucket[key].value !== 'string') bucket[key].value = '';
+    if (bucket[key].result && typeof bucket[key].result !== 'object') bucket[key].result = null;
+    return bucket[key];
+}
+
+function persistCurrentWritingDraft(value) {
+    if (!currentGradeId || !currentTopicId) return;
+    const state = loadAttemptState();
+    const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+    const mode = (writingMode === 'grammar') ? 'grammar' : 'vocab';
+    const itemId = (mode === 'grammar') ? grammarIndex : currentIndex;
+    const item = getWritingItemAttempt(topicAttempt, mode, itemId);
+    if (!item) return;
+    item.value = String(value ?? '');
+    saveAttemptState(state);
+}
+
+function persistCurrentWritingResult(result) {
+    if (!currentGradeId || !currentTopicId) return;
+    const state = loadAttemptState();
+    const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+    const mode = (writingMode === 'grammar') ? 'grammar' : 'vocab';
+    const itemId = (mode === 'grammar') ? grammarIndex : currentIndex;
+    const item = getWritingItemAttempt(topicAttempt, mode, itemId);
+    if (!item) return;
+    item.value = String(document.getElementById('write-input')?.value ?? item.value ?? '');
+    item.result = {
+        message: String(result?.message ?? ''),
+        is_correct: !!result?.is_correct,
+        suggestion: String(result?.suggestion ?? ''),
+    };
+    saveAttemptState(state);
+}
+
+function initWritingDraftPersistence() {
+    const input = document.getElementById('write-input');
+    if (!input || input.dataset.draftAttached === '1') return;
+    input.addEventListener('input', () => {
+        persistCurrentWritingDraft(input.value);
+    });
+    input.dataset.draftAttached = '1';
+}
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const recognition = new SpeechRecognition ? new SpeechRecognition() : null;
@@ -79,6 +194,18 @@ function ensureTopicProgress(state, gradeId, topicId) {
     if (!state.topics[key]) {
         state.topics[key] = {
             score: 0,
+            sectionScores: {
+                speaking: 0,
+                writing: 0,
+                test: 0,
+            },
+            attempted: {
+                speaking: [],
+                writing: [],
+                grammar: [],
+                quiz: [],
+                missing: [],
+            },
             completed: {
                 speaking: [],
                 writing: [],
@@ -89,6 +216,18 @@ function ensureTopicProgress(state, gradeId, topicId) {
         };
     }
     if (typeof state.topics[key].score !== 'number') state.topics[key].score = 0;
+    if (!state.topics[key].sectionScores || typeof state.topics[key].sectionScores !== 'object') {
+        state.topics[key].sectionScores = { speaking: 0, writing: 0, test: 0 };
+    }
+    for (const sec of ['speaking', 'writing', 'test']) {
+        if (typeof state.topics[key].sectionScores[sec] !== 'number') state.topics[key].sectionScores[sec] = 0;
+    }
+    if (!state.topics[key].attempted || typeof state.topics[key].attempted !== 'object') {
+        state.topics[key].attempted = { speaking: [], writing: [], grammar: [], quiz: [], missing: [] };
+    }
+    for (const cat of ['speaking', 'writing', 'grammar', 'quiz', 'missing']) {
+        if (!Array.isArray(state.topics[key].attempted[cat])) state.topics[key].attempted[cat] = [];
+    }
     if (!state.topics[key].completed || typeof state.topics[key].completed !== 'object') {
         state.topics[key].completed = { speaking: [], writing: [], grammar: [], quiz: [], missing: [] };
     }
@@ -98,9 +237,10 @@ function ensureTopicProgress(state, gradeId, topicId) {
     return state.topics[key];
 }
 
-function clampScore(score) {
+function clampScore(score, maxScore = TOPIC_MAX_SCORE) {
     if (!Number.isFinite(score)) return 0;
-    return Math.max(0, Math.min(TOPIC_MAX_SCORE, score));
+    const maxVal = Number.isFinite(maxScore) ? maxScore : TOPIC_MAX_SCORE;
+    return Math.max(0, Math.min(maxVal, score));
 }
 
 function getTotalScore() {
@@ -116,49 +256,215 @@ function renderTotalScore() {
 function getTopicScore(gradeId, topicId) {
     const state = loadScoreState();
     const topic = ensureTopicProgress(state, gradeId, topicId);
-    return Math.round(clampScore(topic.score));
+    return Math.round(clampScore(topic.score, TOPIC_MAX_SCORE));
+}
+
+function getTopicSectionScore(gradeId, topicId, section) {
+    const state = loadScoreState();
+    const topic = ensureTopicProgress(state, gradeId, topicId);
+    const maxScore = SCORE_WEIGHTS[section] ?? 0;
+    const val = topic.sectionScores?.[section];
+    return Math.round(clampScore(typeof val === 'number' ? val : 0, maxScore));
+}
+
+function getScoreSectionForCategory(category) {
+    if (category === 'speaking') return 'speaking';
+    if (category === 'writing' || category === 'grammar') return 'writing';
+    if (category === 'quiz' || category === 'missing') return 'test';
+    return null;
+}
+
+function getSectionMaxScore(section) {
+    return SCORE_WEIGHTS[section] ?? 0;
+}
+
+function getSectionItemCount(section, topicData) {
+    const vocabCount = Array.isArray(topicData?.vocab) ? topicData.vocab.length : 0;
+    const grammarCount = Array.isArray(topicData?.grammar) ? topicData.grammar.length : 0;
+    const quizCount = Array.isArray(topicData?.quiz) ? topicData.quiz.length : 0;
+
+    if (section === 'speaking') return vocabCount;
+    if (section === 'writing') return vocabCount + grammarCount;
+    if (section === 'test') return quizCount + vocabCount;
+    return 0;
 }
 
 function getPerItemPoints(category, topicData) {
-    const vocabCount = Array.isArray(topicData?.vocab) ? topicData.vocab.length : 0;
-    const grammarCount = Array.isArray(topicData?.grammar) ? topicData.grammar.length : 0;
-    const quizCount = Array.isArray(topicData?.quiz) ? topicData.quiz.length : 0;
+    const section = getScoreSectionForCategory(category);
+    if (!section) return 0;
 
-    const counts = {
-        speaking: vocabCount,
-        writing: vocabCount,
-        grammar: grammarCount,
-        quiz: quizCount,
-        missing: vocabCount,
-    };
+    const sectionMax = getSectionMaxScore(section);
+    const itemCount = getSectionItemCount(section, topicData);
+    if (sectionMax <= 0 || itemCount <= 0) return 0;
 
-    const totalItems = Object.values(counts).reduce((acc, c) => acc + (c > 0 ? c : 0), 0);
-    if (totalItems <= 0) return 0;
-    if (!counts[category] || counts[category] <= 0) return 0;
-
-    return TOPIC_MAX_SCORE / totalItems;
+    return sectionMax / itemCount;
 }
 
-function normalizeTopicScoreIfComplete(topicProgress, topicData) {
+function recomputeTopicScores(topicProgress, topicData) {
+    if (!topicProgress || typeof topicProgress !== 'object') return;
+    if (!topicProgress.sectionScores || typeof topicProgress.sectionScores !== 'object') {
+        topicProgress.sectionScores = { speaking: 0, writing: 0, test: 0 };
+    }
+
+    const nextSectionScores = { speaking: 0, writing: 0, test: 0 };
+
+    const completed = topicProgress.completed || {};
+    const unique = (arr) => Array.from(new Set(Array.isArray(arr) ? arr : []));
+
+    for (const itemId of unique(completed.speaking)) {
+        nextSectionScores.speaking += getPerItemPoints('speaking', topicData);
+    }
+
+    for (const itemId of unique(completed.writing)) {
+        nextSectionScores.writing += getPerItemPoints('writing', topicData);
+    }
+    for (const itemId of unique(completed.grammar)) {
+        nextSectionScores.writing += getPerItemPoints('grammar', topicData);
+    }
+
+    for (const itemId of unique(completed.quiz)) {
+        nextSectionScores.test += getPerItemPoints('quiz', topicData);
+    }
+    for (const itemId of unique(completed.missing)) {
+        nextSectionScores.test += getPerItemPoints('missing', topicData);
+    }
+
+    nextSectionScores.speaking = clampScore(nextSectionScores.speaking, SCORE_WEIGHTS.speaking);
+    nextSectionScores.writing = clampScore(nextSectionScores.writing, SCORE_WEIGHTS.writing);
+    nextSectionScores.test = clampScore(nextSectionScores.test, SCORE_WEIGHTS.test);
+
+    topicProgress.sectionScores.speaking = nextSectionScores.speaking;
+    topicProgress.sectionScores.writing = nextSectionScores.writing;
+    topicProgress.sectionScores.test = nextSectionScores.test;
+
+    topicProgress.score = clampScore(
+        nextSectionScores.speaking + nextSectionScores.writing + nextSectionScores.test,
+        TOPIC_MAX_SCORE
+    );
+}
+
+function _uniqueLen(arr) {
+    return new Set(Array.isArray(arr) ? arr : []).size;
+}
+
+function markAttemptedOnce(category, itemId) {
+    if (!currentGradeId || !currentTopicId) return;
+    const state = loadScoreState();
+    const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+    const list = topic.attempted?.[category];
+    if (!Array.isArray(list)) return;
+    if (list.includes(itemId)) return;
+    list.push(itemId);
+    saveScoreState(state);
+}
+
+function isAttemptedItem(category, itemId) {
+    if (!currentGradeId || !currentTopicId) return false;
+    const state = loadScoreState();
+    const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+    const list = topic.attempted?.[category];
+    if (!Array.isArray(list)) return false;
+    return list.includes(itemId);
+}
+
+function setButtonLocked(btn, locked) {
+    if (!btn) return;
+    btn.disabled = !!locked;
+    btn.classList.toggle('opacity-50', !!locked);
+    btn.classList.toggle('cursor-not-allowed', !!locked);
+}
+
+function isSectionComplete(topicProgress, topicData, section) {
+    // A section is considered "complete" when the learner has ATTEMPTED all items.
+    // Wrong answers simply don't award points.
+    const attempted = topicProgress?.attempted || {};
     const vocabCount = Array.isArray(topicData?.vocab) ? topicData.vocab.length : 0;
     const grammarCount = Array.isArray(topicData?.grammar) ? topicData.grammar.length : 0;
     const quizCount = Array.isArray(topicData?.quiz) ? topicData.quiz.length : 0;
 
-    const totalItems =
-        (vocabCount > 0 ? vocabCount : 0) * 3 +
-        (grammarCount > 0 ? grammarCount : 0) +
-        (quizCount > 0 ? quizCount : 0);
-    if (totalItems <= 0) return;
+    if (section === 'speaking') {
+        if (vocabCount <= 0) return false;
+        return _uniqueLen(attempted.speaking) >= vocabCount;
+    }
+    if (section === 'writing') {
+        const total = vocabCount + grammarCount;
+        if (total <= 0) return false;
+        return _uniqueLen(attempted.writing) >= vocabCount && _uniqueLen(attempted.grammar) >= grammarCount;
+    }
+    if (section === 'test') {
+        const total = vocabCount + quizCount;
+        if (total <= 0) return false;
+        return _uniqueLen(attempted.missing) >= vocabCount && _uniqueLen(attempted.quiz) >= quizCount;
+    }
+    return false;
+}
 
-    const doneCount =
-        (Array.isArray(topicProgress.completed.speaking) ? topicProgress.completed.speaking.length : 0) +
-        (Array.isArray(topicProgress.completed.writing) ? topicProgress.completed.writing.length : 0) +
-        (Array.isArray(topicProgress.completed.grammar) ? topicProgress.completed.grammar.length : 0) +
-        (Array.isArray(topicProgress.completed.quiz) ? topicProgress.completed.quiz.length : 0) +
-        (Array.isArray(topicProgress.completed.missing) ? topicProgress.completed.missing.length : 0);
+function renderCurrentTopicSectionScores() {
+    const badgeSpeaking = document.getElementById('badge-speaking');
+    const badgeWriting = document.getElementById('badge-writing');
+    const badgeTest = document.getElementById('badge-test');
+    const elSpeaking = document.getElementById('score-speaking');
+    const elWriting = document.getElementById('score-writing');
+    const elTest = document.getElementById('score-test');
+    if (!badgeSpeaking && !badgeWriting && !badgeTest && !elSpeaking && !elWriting && !elTest) return;
 
-    if (doneCount >= totalItems) {
-        topicProgress.score = TOPIC_MAX_SCORE;
+    if (!currentGradeId || !currentTopicId || !currentData) {
+        if (badgeSpeaking) badgeSpeaking.classList.add('hidden');
+        if (badgeWriting) badgeWriting.classList.add('hidden');
+        if (badgeTest) badgeTest.classList.add('hidden');
+        return;
+    }
+
+    const state = loadScoreState();
+    const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+
+    const completeSpeaking = isSectionComplete(topic, currentData, 'speaking');
+    const completeWriting = isSectionComplete(topic, currentData, 'writing');
+    // Keep test score revealed only on Submit.
+    const completeTest = false;
+
+    if (badgeSpeaking) badgeSpeaking.classList.toggle('hidden', !completeSpeaking);
+    if (badgeWriting) badgeWriting.classList.toggle('hidden', !completeWriting);
+    if (badgeTest) badgeTest.classList.toggle('hidden', !completeTest);
+
+    if (completeSpeaking && elSpeaking) {
+        elSpeaking.innerText = String(getTopicSectionScore(currentGradeId, currentTopicId, 'speaking'));
+    }
+    if (completeWriting && elWriting) {
+        elWriting.innerText = String(getTopicSectionScore(currentGradeId, currentTopicId, 'writing'));
+    }
+    if (completeTest && elTest) {
+        elTest.innerText = String(getTopicSectionScore(currentGradeId, currentTopicId, 'test'));
+    }
+}
+
+function announceSectionCompletedIfNeeded(section) {
+    if (!currentGradeId || !currentTopicId || !currentData) return;
+
+    const state = loadScoreState();
+    const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+    if (!isSectionComplete(topic, currentData, section)) return;
+
+    if (section === 'speaking') {
+        const score = getTopicSectionScore(currentGradeId, currentTopicId, 'speaking');
+        const status = document.getElementById('speak-status');
+        if (status) {
+            status.innerText = `Hoàn thành luyện nói! Điểm: ${score}/25`;
+            status.className = 'text-lg font-bold text-green-600';
+        }
+        return;
+    }
+
+    if (section === 'writing') {
+        const score = getTopicSectionScore(currentGradeId, currentTopicId, 'writing');
+        const fb = document.getElementById('write-feedback');
+        if (fb) {
+            fb.innerText = `Hoàn thành luyện viết! Điểm: ${score}/25`;
+            fb.className = 'mt-4 font-bold text-xl text-green-600';
+        }
+
+        // After finishing all writing items, allow redo for practice.
+        setWritingRedoButton(true);
     }
 }
 
@@ -176,10 +482,20 @@ function awardTopicPointsOnce(category, itemId) {
 
     completedList.push(itemId);
     const delta = getPerItemPoints(category, currentData);
-    topic.score = clampScore(topic.score + delta);
-    normalizeTopicScoreIfComplete(topic, currentData);
+    const section = getScoreSectionForCategory(category);
+    if (section) {
+        const maxScore = getSectionMaxScore(section);
+        const currentVal = typeof topic.sectionScores[section] === 'number' ? topic.sectionScores[section] : 0;
+        topic.sectionScores[section] = clampScore(currentVal + delta, maxScore);
+    }
+
+    topic.score = clampScore(
+        (topic.sectionScores?.speaking || 0) + (topic.sectionScores?.writing || 0) + (topic.sectionScores?.test || 0),
+        TOPIC_MAX_SCORE
+    );
     saveScoreState(state);
     renderTotalScore();
+    renderCurrentTopicSectionScores();
 }
 
 // --- HÀM TTS MỚI (Dùng gTTS từ Server) ---
@@ -219,6 +535,15 @@ async function loadTopic(gradeId, topicId) {
     currentData = await res.json();
     currentGradeId = gradeId;
     currentTopicId = topicId;
+
+    // Recompute/migrate score state for this topic based on completed items
+    try {
+        const state = loadScoreState();
+        const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+        recomputeTopicScores(topic, currentData);
+        saveScoreState(state);
+    } catch { /* ignore */ }
+
     renderTotalScore();
     document.getElementById('current-topic-title').innerText = currentData.title;
     const selectedTitleEl = document.getElementById('selected-topic-title');
@@ -231,6 +556,7 @@ async function loadTopic(gradeId, topicId) {
     writingMode = 'vocab';
     renderVocab(); setupSpeaking(); setupWriting(); renderQuiz();
     switchTab('vocab');
+    renderCurrentTopicSectionScores();
 }
 
 function chooseMode(mode) {
@@ -317,6 +643,15 @@ function updateSpeakCard() {
     document.getElementById('speak-status').className = "text-lg font-bold text-slate-500 bg-slate-100 px-4 py-2 rounded-lg";
     document.getElementById('speak-suggestion').classList.add('hidden'); // Ẩn gợi ý cũ
 
+    // Nếu đã làm rồi (đúng hoặc sai) thì KHÔNG cho làm lại
+    const micBtn = document.getElementById('mic-btn');
+    const attempted = isAttemptedItem('speaking', currentIndex);
+    setButtonLocked(micBtn, attempted);
+    if (attempted) {
+        document.getElementById('speak-status').innerText = 'Câu này đã làm rồi. Không thể làm lại.';
+        document.getElementById('speak-status').className = 'text-lg font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-lg';
+    }
+
     // Khôi phục hiển thị phiên âm (IPA)
     if (phoneticEl && word?.en) {
         getPhoneticCached(word.en).then(phon => {
@@ -329,6 +664,10 @@ function updateSpeakCard() {
 function toggleMic() {
     if(!recognition) { alert("Lỗi Mic"); return; }
     const btn = document.getElementById('mic-btn');
+    if (isAttemptedItem('speaking', currentIndex)) {
+        alert('Câu này đã làm rồi. Không thể làm lại.');
+        return;
+    }
     recognition.start();
     btn.classList.add('animate-pulse', 'bg-red-500');
     document.getElementById('speak-status').innerText = "Đang nghe...";
@@ -352,6 +691,9 @@ function toggleMic() {
             })
         });
         const result = await res.json();
+
+        // Count as attempted even if incorrect
+        markAttemptedOnce('speaking', currentIndex);
         
         document.getElementById('speak-status').innerHTML = result.message;
         document.getElementById('speak-status').className = result.is_correct ? "text-lg font-bold text-green-600" : "text-lg font-bold text-red-500";
@@ -363,23 +705,105 @@ function toggleMic() {
             suggBox.innerHTML = `<b>💡 Gợi ý:</b> ${result.suggestion}`;
         }
 
-        if(result.is_correct) { awardTopicPointsOnce('speaking', currentIndex); playTTS("Excellent!"); setTimeout(nextSpeak, 2000); }
+        // Lock ngay sau lần làm đầu tiên (đúng hoặc sai)
+        setButtonLocked(btn, true);
+
+        if(result.is_correct) {
+            awardTopicPointsOnce('speaking', currentIndex);
+            playTTS("Excellent!");
+            setTimeout(nextSpeak, 2000);
+        }
         else { playTTS("Try again!"); }
         
         btn.classList.remove('animate-pulse', 'bg-red-500');
     };
 }
-function nextSpeak() { if(currentIndex < currentData.vocab.length-1) { currentIndex++; updateSpeakCard(); } }
+function nextSpeak() {
+    if (!currentData?.vocab || currentData.vocab.length <= 0) return;
+
+    if (currentIndex < currentData.vocab.length - 1) {
+        currentIndex++;
+        updateSpeakCard();
+        return;
+    }
+
+    // At the end: if the whole speaking section is complete, reveal score now.
+    renderCurrentTopicSectionScores();
+    announceSectionCompletedIfNeeded('speaking');
+}
 function prevSpeak() { if(currentIndex > 0) { currentIndex--; updateSpeakCard(); } }
 
 // Writing Logic
-function setupWriting() { updateWriteCard(); }
+function setWritingRedoButton(enabled) {
+    const btn = document.getElementById('write-next-btn');
+    if (!btn) return;
+
+    const prevBtn = document.getElementById('write-prev-btn');
+    if (prevBtn) prevBtn.classList.toggle('hidden', !!enabled);
+
+    if (enabled) {
+        btn.innerHTML = 'Làm lại phần viết <i class="fas fa-rotate-right"></i>';
+        btn.onclick = resetWritingSection;
+        btn.classList.remove('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+        btn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+    } else {
+        const label = (writingMode === 'grammar')
+            ? 'Câu tiếp theo <i class="fas fa-arrow-right"></i>'
+            : 'Từ tiếp theo <i class="fas fa-arrow-right"></i>';
+        btn.innerHTML = label;
+        btn.onclick = nextWrite;
+        btn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+        btn.classList.add('bg-slate-100', 'text-slate-600', 'hover:bg-slate-200');
+    }
+}
+
+function resetWritingSection() {
+    if (!currentGradeId || !currentTopicId || !currentData) return;
+
+    // Only allow redo after the learner has attempted all items.
+    try {
+        const scoreState = loadScoreState();
+        const topic = ensureTopicProgress(scoreState, currentGradeId, currentTopicId);
+        if (!isSectionComplete(topic, currentData, 'writing')) {
+            alert('Bé hãy làm xong hết các câu phần viết rồi mới làm lại nhé!');
+            return;
+        }
+    } catch {}
+
+    if (!confirm('Bé muốn làm lại phần viết từ đầu không? (Điểm sẽ không cộng thêm)')) return;
+
+    // Clear writing drafts/results (attempt state)
+    try {
+        const attemptState = loadAttemptState();
+        const topicAttempt = ensureTopicAttempt(attemptState, currentGradeId, currentTopicId);
+        topicAttempt.writing = { vocab: {}, grammar: {} };
+        saveAttemptState(attemptState);
+    } catch {}
+
+    // Unlock writing items by clearing attempted lists (score state)
+    try {
+        const scoreState = loadScoreState();
+        const topic = ensureTopicProgress(scoreState, currentGradeId, currentTopicId);
+        topic.attempted.writing = [];
+        topic.attempted.grammar = [];
+        saveScoreState(scoreState);
+    } catch {}
+
+    // Restart writing flow
+    currentIndex = 0;
+    grammarIndex = 0;
+    writingMode = 'vocab';
+    setWritingMode('vocab');
+    setWritingRedoButton(false);
+    updateWriteCard();
+}
+
 function updateWriteCard() {
     const suggestion = document.getElementById('write-suggestion');
     suggestion.classList.add('hidden');
     suggestion.innerHTML = '';
     document.getElementById('write-feedback').innerText = '';
-    document.getElementById('write-input').value = '';
+    const writeInput = document.getElementById('write-input');
 
     if (writingMode === 'grammar') {
         const hasGrammar = Array.isArray(currentData?.grammar) && currentData.grammar.length > 0;
@@ -403,7 +827,73 @@ function updateWriteCard() {
         document.getElementById('write-input').placeholder = 'Nhập đáp án...';
     }
 
-    document.getElementById('write-input').focus();
+    // Restore draft + previous result for this exact item (unless user cleared it)
+    try {
+        const state = loadAttemptState();
+        const topicAttempt = (currentGradeId && currentTopicId) ? ensureTopicAttempt(state, currentGradeId, currentTopicId) : null;
+        const mode = (writingMode === 'grammar') ? 'grammar' : 'vocab';
+        const itemId = (mode === 'grammar') ? grammarIndex : currentIndex;
+        const item = topicAttempt ? getWritingItemAttempt(topicAttempt, mode, itemId) : null;
+        if (writeInput) {
+            writeInput.value = item?.value || '';
+        }
+
+        const fb = document.getElementById('write-feedback');
+        if (fb && item?.result) {
+            fb.innerText = item.result.message || '';
+            fb.className = item.result.is_correct
+                ? 'mt-4 font-bold text-xl text-green-600'
+                : 'mt-4 font-bold text-xl text-red-500';
+        }
+
+        const sugg = document.getElementById('write-suggestion');
+        if (sugg) {
+            const s = item?.result?.suggestion;
+            if (s) {
+                sugg.classList.remove('hidden');
+                sugg.innerHTML = `<b>💡 Gợi ý:</b> ${s}`;
+            }
+        }
+
+        if (topicAttempt) saveAttemptState(state);
+    } catch {}
+
+    // Disable/enable based on whether this item was already attempted
+    const writeSubmit = document.getElementById('write-submit-btn');
+    const category = (writingMode === 'grammar') ? 'grammar' : 'writing';
+    const itemId = (writingMode === 'grammar') ? grammarIndex : currentIndex;
+    const attempted = isAttemptedItem(category, itemId);
+    if (writeInput) {
+        writeInput.disabled = attempted;
+        writeInput.classList.toggle('opacity-50', attempted);
+        writeInput.classList.toggle('cursor-not-allowed', attempted);
+    }
+    setButtonLocked(writeSubmit, attempted);
+
+    if (!attempted) {
+        document.getElementById('write-input').focus();
+    }
+
+    updateWriteNavButtons();
+
+    // If finished all writing items, show redo button; otherwise keep next button.
+    try {
+        if (currentGradeId && currentTopicId && currentData) {
+            const scoreState = loadScoreState();
+            const topic = ensureTopicProgress(scoreState, currentGradeId, currentTopicId);
+            setWritingRedoButton(isSectionComplete(topic, currentData, 'writing'));
+        } else {
+            setWritingRedoButton(false);
+        }
+    } catch {
+        setWritingRedoButton(false);
+    }
+}
+
+// Attach once per page
+function setupWriting() {
+    initWritingDraftPersistence();
+    updateWriteCard();
 }
 
 function setWritingMode(mode) {
@@ -433,9 +923,19 @@ function setWritingMode(mode) {
     }
 
     updateWriteCard();
+    setWritingRedoButton(false);
 }
-async function checkWriting() {
+async function checkWriting(options = {}) {
+    const { silent = false } = (options && typeof options === 'object') ? options : {};
+    const category = (writingMode === 'grammar') ? 'grammar' : 'writing';
+    const itemId = (writingMode === 'grammar') ? grammarIndex : currentIndex;
+    if (isAttemptedItem(category, itemId)) {
+        if (!silent) alert('Câu này đã làm rồi. Không thể làm lại.');
+        return;
+    }
+
     const input = document.getElementById('write-input').value;
+    persistCurrentWritingDraft(input);
     const payload = {
         mode: 'writing',
         user_answer: input,
@@ -465,6 +965,14 @@ async function checkWriting() {
         body: JSON.stringify(payload)
     });
     const result = await res.json();
+
+    // Persist result so user can see old work later (unless they redo/reset)
+    persistCurrentWritingResult(result);
+
+    // Count as attempted even if incorrect
+    if (payload?.context?.category && Number.isFinite(payload?.context?.itemId)) {
+        markAttemptedOnce(payload.context.category, payload.context.itemId);
+    }
     const fb = document.getElementById('write-feedback');
     fb.innerText = result.message;
     fb.className = result.is_correct ? "mt-4 font-bold text-xl text-green-600" : "mt-4 font-bold text-xl text-red-500";
@@ -486,8 +994,78 @@ async function checkWriting() {
         }
         playTTS("Correct!");
     }
+
+    // Lock after first attempt (đúng hoặc sai)
+    const writeInput = document.getElementById('write-input');
+    const writeSubmit = document.getElementById('write-submit-btn');
+    if (writeInput) {
+        writeInput.disabled = true;
+        writeInput.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    setButtonLocked(writeSubmit, true);
 }
-function nextWrite() {
+
+async function maybeAutoSubmitWriting() {
+    try {
+        const category = (writingMode === 'grammar') ? 'grammar' : 'writing';
+        const itemId = (writingMode === 'grammar') ? grammarIndex : currentIndex;
+        if (isAttemptedItem(category, itemId)) return false;
+
+        const inputEl = document.getElementById('write-input');
+        const val = String(inputEl?.value ?? '').trim();
+        if (!val) return false;
+
+        await checkWriting({ silent: true });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function updateWriteNavButtons() {
+    const prevBtn = document.getElementById('write-prev-btn');
+    if (!prevBtn) return;
+
+    if (!currentData) {
+        prevBtn.disabled = true;
+        prevBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        return;
+    }
+
+    let atStart = false;
+    if (writingMode === 'grammar') {
+        atStart = grammarIndex <= 0;
+    } else {
+        atStart = currentIndex <= 0;
+    }
+
+    prevBtn.disabled = atStart;
+    prevBtn.classList.toggle('opacity-50', atStart);
+    prevBtn.classList.toggle('cursor-not-allowed', atStart);
+}
+
+async function prevWrite() {
+    // If user typed but forgot to submit, auto-submit before navigating.
+    await maybeAutoSubmitWriting();
+
+    if (writingMode === 'grammar') {
+        if (grammarIndex > 0) {
+            grammarIndex--;
+            updateWriteCard();
+        }
+        return;
+    }
+
+    if (currentIndex > 0) {
+        currentIndex--;
+        updateWriteCard();
+    }
+}
+
+async function nextWrite() {
+    // If user typed but forgot to submit, auto-submit before navigating.
+    await maybeAutoSubmitWriting();
+
     if (writingMode === 'grammar') {
         const hasGrammar = Array.isArray(currentData?.grammar) && currentData.grammar.length > 0;
         if (!hasGrammar) return;
@@ -495,7 +1073,19 @@ function nextWrite() {
             grammarIndex++;
             updateWriteCard();
         } else {
-            alert("Hết bài viết câu!");
+            // End of grammar writing: show score only if writing section is fully complete.
+            renderCurrentTopicSectionScores();
+            if (currentGradeId && currentTopicId) {
+                const state = loadScoreState();
+                const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+                if (isSectionComplete(topic, currentData, 'writing')) {
+                    announceSectionCompletedIfNeeded('writing');
+                } else {
+                    alert("Bạn đã tới cuối phần viết câu. Hãy làm đúng tất cả bài để nhận điểm.");
+                }
+            } else {
+                alert("Hết bài viết câu!");
+            }
         }
         return;
     }
@@ -504,7 +1094,31 @@ function nextWrite() {
         currentIndex++;
         updateWriteCard();
     } else {
-        alert("Hết bài!");
+        // End of vocab writing: show score if writing section is fully complete (or prompt to finish grammar).
+        renderCurrentTopicSectionScores();
+        if (currentGradeId && currentTopicId) {
+            const state = loadScoreState();
+            const topic = ensureTopicProgress(state, currentGradeId, currentTopicId);
+            if (isSectionComplete(topic, currentData, 'writing')) {
+                announceSectionCompletedIfNeeded('writing');
+            } else {
+                const hasGrammar = Array.isArray(currentData?.grammar) && currentData.grammar.length > 0;
+                if (hasGrammar) {
+                    // Auto-switch to Grammar writing
+                    grammarIndex = 0;
+                    setWritingMode('grammar');
+                    const fb = document.getElementById('write-feedback');
+                    if (fb) {
+                        fb.innerText = "Đã chuyển sang phần Viết câu. Làm xong để nhận điểm nhé!";
+                        fb.className = "mt-4 font-bold text-xl text-slate-600";
+                    }
+                } else {
+                    alert("Bạn đã tới cuối bài. Hãy làm đúng tất cả để nhận điểm.");
+                }
+            }
+        } else {
+            alert("Hết bài!");
+        }
     }
 }
 
@@ -519,6 +1133,14 @@ function renderQuiz() {
     }
 
     let html = '';
+
+    // Review toolbar (shown only when user clicks "Xem lại bài")
+    html += `
+        <div id="quiz-review-toolbar" class="hidden mb-4 p-3 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-900 font-bold flex items-center justify-between gap-3">
+            <div><i class="fas fa-eye mr-2"></i>Đang xem lại bài vừa làm</div>
+            <button type="button" onclick="backToQuizResult()" class="px-3 py-2 rounded-lg bg-white border border-yellow-200 hover:bg-yellow-100">Quay lại kết quả</button>
+        </div>
+    `;
 
     // --- Trắc nghiệm ---
     if (hasQuiz) {
@@ -538,18 +1160,16 @@ function renderQuiz() {
         }).join('');
     }
 
-    // --- Điền chữ còn thiếu (gõ trực tiếp vào chữ bị thiếu) ---
+    // --- Điền chữ (gõ trực tiếp vào chữ bị thiếu) ---
     if (hasVocab) {
         html += `
             <div class="p-4 border border-slate-200 rounded-xl bg-white">
-                <div class="font-black text-slate-800 mb-3">Điền chữ còn thiếu</div>
                 <div class="space-y-4">
                     ${currentData.vocab.map((w, idx) => `
                         <div class="p-4 border border-slate-200 rounded-xl bg-slate-50">
                             <div class="text-sm text-slate-600 font-bold mb-2">${w.vi}</div>
                             <div class="flex items-center justify-between gap-3 flex-wrap">
                                 <div id="ml-word-${idx}" class="text-2xl font-black text-slate-800 tracking-wider"></div>
-                                <button type="button" id="ml-btn-${idx}" data-ml-check="${idx}" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Kiểm tra</button>
                             </div>
                             <div id="ml-feedback-${idx}" class="mt-2 text-sm font-bold"></div>
                         </div>
@@ -559,7 +1179,7 @@ function renderQuiz() {
         `;
     }
 
-    html += `<button onclick="finishQuiz()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl mt-4">Nộp Bài</button>`;
+    html += `<button id="quiz-submit-btn" onclick="finishQuiz()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl mt-4">Nộp Bài</button>`;
     container.innerHTML = html;
     document.getElementById('quiz-result').classList.add('hidden');
     container.classList.remove('hidden');
@@ -574,6 +1194,102 @@ function renderQuiz() {
     }
 
     initTestEventDelegation();
+
+    // Restore previous attempt UI for this topic (unless user clicked "Làm lại bài")
+    hydrateTestAttemptUI({ suppressAutoResultView: false, revealAnswers: false });
+}
+
+function hydrateTestAttemptUI({ suppressAutoResultView = false, revealAnswers = false } = {}) {
+    if (!currentGradeId || !currentTopicId || !currentData) return;
+    const state = loadAttemptState();
+    const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+
+    // Hydrate quiz selections
+    try {
+        const quizState = topicAttempt?.test?.quiz || {};
+        for (const [qIdxRaw, rec] of Object.entries(quizState)) {
+            const qIdx = Number(qIdxRaw);
+            if (!Number.isFinite(qIdx)) continue;
+            const optIdx = Number(rec?.selectedOptIdx);
+            if (!Number.isFinite(optIdx)) continue;
+
+            const btn = document.querySelector(`button[data-quiz-q="${qIdx}"][data-quiz-opt="${optIdx}"]`);
+            if (!btn || !btn.parentElement) continue;
+
+            // Always restore the selection, but do not grade until Submit.
+            btn.classList.add('bg-blue-100', 'border-blue-500');
+
+            if (revealAnswers) {
+                const q = currentData?.quiz?.[qIdx];
+                const correctAns = String(q?.answer ?? '').trim();
+                const siblings = btn.parentElement.children;
+                for (let sib of siblings) {
+                    sib.disabled = true;
+                    if (correctAns && sib.innerText.trim() === correctAns) {
+                        sib.classList.add('bg-green-100', 'border-green-500');
+                    }
+                }
+
+                const isCorrect = !!rec?.is_correct;
+                if (isCorrect) {
+                    btn.classList.remove('bg-blue-100', 'border-blue-500');
+                    btn.classList.add('bg-green-100', 'border-green-500');
+                } else {
+                    btn.classList.remove('bg-blue-100', 'border-blue-500');
+                    btn.classList.add('bg-red-100', 'border-red-500');
+                }
+            }
+        }
+    } catch {}
+
+    // Hydrate missing letters inputs
+    try {
+        const missingState = topicAttempt?.test?.missing || {};
+        for (const [wIdxRaw, rec] of Object.entries(missingState)) {
+            const wIdx = Number(wIdxRaw);
+            if (!Number.isFinite(wIdx)) continue;
+            const mount = document.getElementById(`ml-word-${wIdx}`);
+            if (!mount) continue;
+            const inputs = Array.from(mount.querySelectorAll('input[data-ml-idx]'));
+            const letters = rec?.letters && typeof rec.letters === 'object' ? rec.letters : {};
+            for (const inp of inputs) {
+                const pos = String(inp.getAttribute('data-ml-pos') || '');
+                if (pos && Object.prototype.hasOwnProperty.call(letters, pos)) {
+                    inp.value = String(letters[pos] ?? '');
+                }
+            }
+
+            const feedbackEl = document.getElementById(`ml-feedback-${wIdx}`);
+            if (feedbackEl) {
+                if (revealAnswers && topicAttempt?.test?.finished) {
+                    const correctWord = String(currentData?.vocab?.[wIdx]?.en ?? '').trim();
+                    if (rec?.is_correct) {
+                        feedbackEl.innerHTML = 'Đúng rồi! 🎉';
+                        feedbackEl.className = 'mt-2 text-sm font-bold text-green-600';
+                    } else {
+                        feedbackEl.innerHTML = correctWord ? `Sai rồi. Đáp án đúng: <b>${escapeHtml(correctWord)}</b>` : 'Sai rồi.';
+                        feedbackEl.className = 'mt-2 text-sm font-bold text-red-500';
+                    }
+                } else {
+                    // While doing (not submitted), do not show grading.
+                    feedbackEl.innerHTML = '';
+                    feedbackEl.className = 'mt-2 text-sm font-bold';
+                }
+            }
+
+            // Only lock inputs during review after submit
+            for (const inp of inputs) inp.disabled = !!(revealAnswers && topicAttempt?.test?.finished);
+        }
+    } catch {}
+
+    // If user previously submitted, keep result view visible
+    try {
+        if (!suppressAutoResultView && topicAttempt?.test?.finished) {
+            showQuizResultView(false);
+        }
+    } catch {}
+
+    saveAttemptState(state);
 }
 
 function initTestEventDelegation() {
@@ -586,21 +1302,53 @@ function initTestEventDelegation() {
             const qIdx = Number(quizBtn.getAttribute('data-quiz-q'));
             const optIdx = Number(quizBtn.getAttribute('data-quiz-opt'));
             if (Number.isFinite(qIdx) && Number.isFinite(optIdx)) {
-                checkQuiz(quizBtn, qIdx, optIdx);
+                selectQuizOption(quizBtn, qIdx, optIdx);
             }
             return;
-        }
-
-        const missingBtn = e.target.closest('button[data-ml-check]');
-        if (missingBtn) {
-            const idx = Number(missingBtn.getAttribute('data-ml-check'));
-            if (Number.isFinite(idx)) {
-                checkMissingLetters(idx);
-            }
         }
     });
 
     container.dataset.handlersAttached = '1';
+}
+
+function isCurrentTopicTestSubmitted() {
+    try {
+        if (!currentGradeId || !currentTopicId) return false;
+        const state = loadAttemptState();
+        const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+        return !!topicAttempt?.test?.finished;
+    } catch {
+        return false;
+    }
+}
+
+function persistQuizSelection(questionIndex, optIdx) {
+    try {
+        if (!currentGradeId || !currentTopicId) return;
+        const state = loadAttemptState();
+        const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+        const key = String(questionIndex);
+        if (!topicAttempt.test.quiz[key] || typeof topicAttempt.test.quiz[key] !== 'object') {
+            topicAttempt.test.quiz[key] = {};
+        }
+        topicAttempt.test.quiz[key].selectedOptIdx = Number(optIdx);
+        saveAttemptState(state);
+    } catch {}
+}
+
+function selectQuizOption(btn, questionIndex, optIdx) {
+    if (!btn || !btn.parentElement) return;
+    if (isCurrentTopicTestSubmitted()) return;
+
+    // Clear previous UI selection for this question
+    const siblings = btn.parentElement.children;
+    for (let sib of siblings) {
+        sib.classList.remove('bg-blue-100', 'border-blue-500', 'bg-green-100', 'border-green-500', 'bg-red-100', 'border-red-500');
+    }
+
+    // Mark selected
+    btn.classList.add('bg-blue-100', 'border-blue-500');
+    persistQuizSelection(questionIndex, optIdx);
 }
 
 function pickMissingLetterPositions(word) {
@@ -684,6 +1432,22 @@ function onMissingLetterInput(e) {
         inputs[curIndex + 1].focus();
         inputs[curIndex + 1].select();
     }
+
+    // Persist draft letter
+    try {
+        if (!currentGradeId || !currentTopicId) return;
+        const state = loadAttemptState();
+        const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+        const wordIndex = String(idx);
+        if (!topicAttempt.test.missing[wordIndex] || typeof topicAttempt.test.missing[wordIndex] !== 'object') {
+            topicAttempt.test.missing[wordIndex] = { letters: {}, is_correct: false, feedback: '' };
+        }
+        if (!topicAttempt.test.missing[wordIndex].letters || typeof topicAttempt.test.missing[wordIndex].letters !== 'object') {
+            topicAttempt.test.missing[wordIndex].letters = {};
+        }
+        topicAttempt.test.missing[wordIndex].letters[String(pos)] = String(input.value || '');
+        saveAttemptState(state);
+    } catch {}
 }
 
 function onMissingLetterKeyDown(e) {
@@ -732,6 +1496,8 @@ async function checkMissingLetters(wordIndex) {
 
     // Luôn gọi backend để chấm (đúng/sai) + đồng bộ logic "đúng rồi thì không cộng lại"
     try {
+        // Count as attempted even if incorrect
+        markAttemptedOnce('missing', wordIndex);
         const res = await fetch('/api/check', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -755,72 +1521,238 @@ async function checkMissingLetters(wordIndex) {
             ? 'mt-2 text-sm font-bold text-green-600'
             : 'mt-2 text-sm font-bold text-red-500';
 
+        // Lock after first attempt (đúng hoặc sai)
+        for (const inp of inputs) inp.disabled = true;
+        const lockBtn = document.getElementById(`ml-btn-${wordIndex}`);
+        if (lockBtn) lockBtn.disabled = true;
+
         if (result.is_correct) {
             if (!result.already_correct) {
                 awardTopicPointsOnce('missing', wordIndex);
             }
-            for (const inp of inputs) inp.disabled = true;
-            const btn = document.getElementById(`ml-btn-${wordIndex}`);
-            if (btn) btn.disabled = true;
             playTTS(original);
         }
+
+        // Persist result + locked state
+        try {
+            if (currentGradeId && currentTopicId) {
+                const state = loadAttemptState();
+                const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+                const recKey = String(wordIndex);
+                if (!topicAttempt.test.missing[recKey] || typeof topicAttempt.test.missing[recKey] !== 'object') {
+                    topicAttempt.test.missing[recKey] = { letters: {}, is_correct: false, feedback: '' };
+                }
+                topicAttempt.test.missing[recKey].is_correct = !!result.is_correct;
+                topicAttempt.test.missing[recKey].feedback = String(result.message || (result.is_correct ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!'));
+
+                // Also persist current letters from DOM
+                const letters = {};
+                for (const inp of inputs) {
+                    const pos = String(inp.getAttribute('data-ml-pos') || '');
+                    if (!pos) continue;
+                    letters[pos] = String(inp.value || '');
+                }
+                topicAttempt.test.missing[recKey].letters = letters;
+                saveAttemptState(state);
+            }
+        } catch {}
     } catch {
+        // Count as attempted even if incorrect
+        markAttemptedOnce('missing', wordIndex);
         // Fallback khi lỗi mạng: vẫn chấm local
         const ok = answer.toLowerCase() === original.toLowerCase();
         feedbackEl.innerText = ok ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!';
         feedbackEl.className = ok
             ? 'mt-2 text-sm font-bold text-green-600'
             : 'mt-2 text-sm font-bold text-red-500';
+        // Lock after first attempt (đúng hoặc sai)
+        for (const inp of inputs) inp.disabled = true;
+        const lockBtn = document.getElementById(`ml-btn-${wordIndex}`);
+        if (lockBtn) lockBtn.disabled = true;
+
         if (ok) {
             awardTopicPointsOnce('missing', wordIndex);
-            for (const inp of inputs) inp.disabled = true;
-            const btn = document.getElementById(`ml-btn-${wordIndex}`);
-            if (btn) btn.disabled = true;
             playTTS(original);
         }
+
+        // Persist fallback result
+        try {
+            if (currentGradeId && currentTopicId) {
+                const state = loadAttemptState();
+                const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+                const recKey = String(wordIndex);
+                if (!topicAttempt.test.missing[recKey] || typeof topicAttempt.test.missing[recKey] !== 'object') {
+                    topicAttempt.test.missing[recKey] = { letters: {}, is_correct: false, feedback: '' };
+                }
+                topicAttempt.test.missing[recKey].is_correct = !!ok;
+                topicAttempt.test.missing[recKey].feedback = ok ? 'Đúng rồi! 🎉' : 'Chưa đúng, thử lại nhé!';
+
+                const letters = {};
+                for (const inp of inputs) {
+                    const pos = String(inp.getAttribute('data-ml-pos') || '');
+                    if (!pos) continue;
+                    letters[pos] = String(inp.value || '');
+                }
+                topicAttempt.test.missing[recKey].letters = letters;
+                saveAttemptState(state);
+            }
+        } catch {}
     }
 }
-async function checkQuiz(btn, questionIndex, userChoice, correctAns, questionText) {
-    // Backward compatibility if old signature is used
-    if (typeof userChoice === 'number' && typeof correctAns === 'undefined') {
-        const optIndex = userChoice;
-        const q = currentData?.quiz?.[questionIndex];
-        if (!q || !Array.isArray(q.options)) return;
-        const choiceText = String(q.options[optIndex] ?? '').trim();
-        const correctText = String(q.answer ?? '').trim();
-        const qText = String(q.question ?? '').trim();
-        return checkQuiz(btn, questionIndex, choiceText, correctText, qText);
+
+function gradeCurrentTopicTest() {
+    if (!currentGradeId || !currentTopicId || !currentData) return;
+    const hasQuiz = Array.isArray(currentData?.quiz) && currentData.quiz.length > 0;
+    const hasVocab = Array.isArray(currentData?.vocab) && currentData.vocab.length > 0;
+
+    // Evaluate and persist into attempt-state
+    const attemptState = loadAttemptState();
+    const topicAttempt = ensureTopicAttempt(attemptState, currentGradeId, currentTopicId);
+
+    if (hasQuiz) {
+        for (let qIdx = 0; qIdx < currentData.quiz.length; qIdx++) {
+            const q = currentData.quiz[qIdx];
+            const correctAns = String(q?.answer ?? '').trim();
+            const opts = Array.isArray(q?.options) ? q.options : [];
+            const key = String(qIdx);
+            const selectedOptIdx = Number(topicAttempt?.test?.quiz?.[key]?.selectedOptIdx);
+            const selectedText = Number.isFinite(selectedOptIdx) ? String(opts[selectedOptIdx] ?? '').trim() : '';
+
+            const isCorrect = !!selectedText && !!correctAns && selectedText === correctAns;
+            if (!topicAttempt.test.quiz[key] || typeof topicAttempt.test.quiz[key] !== 'object') {
+                topicAttempt.test.quiz[key] = {};
+            }
+            topicAttempt.test.quiz[key].selectedOptIdx = Number.isFinite(selectedOptIdx) ? selectedOptIdx : null;
+            topicAttempt.test.quiz[key].is_correct = !!isCorrect;
+
+            // Mark attempted only when submitting
+            markAttemptedOnce('quiz', qIdx);
+            if (isCorrect) awardTopicPointsOnce('quiz', qIdx);
+        }
     }
 
-    const res = await fetch('/api/check', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            mode: 'quiz',
-            user_answer: userChoice,
-            correct_answer: correctAns,
-            question_text: questionText,
-            context: {
-                gradeId: currentGradeId,
-                topicId: currentTopicId,
-                category: 'quiz',
-                itemId: questionIndex,
-            },
-        })
-    });
-    const result = await res.json();
-    const siblings = btn.parentElement.children;
-    for(let sib of siblings) { sib.disabled = true; if(sib.innerText.trim() === correctAns) sib.classList.add('bg-green-100', 'border-green-500'); }
-    if(result.is_correct) { btn.classList.add('bg-green-100', 'border-green-500'); awardTopicPointsOnce('quiz', questionIndex); } 
-    else { btn.classList.add('bg-red-100', 'border-red-500'); }
+    if (hasVocab) {
+        for (let wIdx = 0; wIdx < currentData.vocab.length; wIdx++) {
+            const correctWord = String(currentData?.vocab?.[wIdx]?.en ?? '').trim();
+            const mount = document.getElementById(`ml-word-${wIdx}`);
+            const feedbackEl = document.getElementById(`ml-feedback-${wIdx}`);
+            if (!mount) continue;
+            const inputs = Array.from(mount.querySelectorAll('input[data-ml-idx]'));
+
+            // Snapshot current letters
+            const letters = {};
+            for (const inp of inputs) {
+                const pos = String(inp.getAttribute('data-ml-pos') || '');
+                if (!pos) continue;
+                letters[pos] = String(inp.value || '');
+            }
+
+            // Reconstruct answer
+            const chars = Array.from(String(correctWord || ''));
+            const byPos = new Map();
+            for (const inp of inputs) {
+                const pos = Number(inp.getAttribute('data-ml-pos'));
+                byPos.set(pos, String(inp.value || '').trim());
+            }
+            let answer = '';
+            for (let i = 0; i < chars.length; i++) {
+                if (byPos.has(i)) answer += byPos.get(i) || '';
+                else answer += chars[i];
+            }
+
+            const isCorrect = !!correctWord && answer.toLowerCase() === correctWord.toLowerCase();
+            const key = String(wIdx);
+            if (!topicAttempt.test.missing[key] || typeof topicAttempt.test.missing[key] !== 'object') {
+                topicAttempt.test.missing[key] = { letters: {}, is_correct: false, feedback: '' };
+            }
+            topicAttempt.test.missing[key].letters = letters;
+            topicAttempt.test.missing[key].is_correct = !!isCorrect;
+            topicAttempt.test.missing[key].feedback = '';
+
+            if (feedbackEl) {
+                feedbackEl.innerHTML = '';
+                feedbackEl.className = 'mt-2 text-sm font-bold';
+            }
+
+            // Mark attempted only when submitting
+            markAttemptedOnce('missing', wIdx);
+            if (isCorrect) awardTopicPointsOnce('missing', wIdx);
+        }
+    }
+
+    saveAttemptState(attemptState);
 }
-function finishQuiz() {
+function showQuizResultView(playSound = false) {
     document.getElementById('quiz-container').classList.add('hidden');
     document.getElementById('quiz-result').classList.remove('hidden');
-    document.getElementById('quiz-score-display').innerText = String(getTotalScore());
-    playTTS("Good job!");
+
+    const toolbar = document.getElementById('quiz-review-toolbar');
+    if (toolbar) toolbar.classList.add('hidden');
+    const testScore = (currentGradeId && currentTopicId)
+        ? getTopicSectionScore(currentGradeId, currentTopicId, 'test')
+        : 0;
+    document.getElementById('quiz-score-display').innerText = String(testScore);
+
+    const badgeTest = document.getElementById('badge-test');
+    const elTest = document.getElementById('score-test');
+    if (badgeTest) badgeTest.classList.remove('hidden');
+    if (elTest) elTest.innerText = String(testScore);
+
+    if (playSound) playTTS('Good job!');
 }
-function resetQuiz() { renderQuiz(); }
+
+function viewQuizReview() {
+    const container = document.getElementById('quiz-container');
+    const result = document.getElementById('quiz-result');
+    if (!container || !result) return;
+
+    result.classList.add('hidden');
+    container.classList.remove('hidden');
+
+    const submitBtn = document.getElementById('quiz-submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        submitBtn.textContent = 'Đã nộp bài';
+    }
+
+    const toolbar = document.getElementById('quiz-review-toolbar');
+    if (toolbar) toolbar.classList.remove('hidden');
+
+    // Re-apply attempt UI and reveal correct answers (after submit)
+    hydrateTestAttemptUI({ suppressAutoResultView: true, revealAnswers: true });
+}
+
+function backToQuizResult() {
+    showQuizResultView(false);
+}
+
+function finishQuiz() {
+    if (isCurrentTopicTestSubmitted()) {
+        showQuizResultView(false);
+        return;
+    }
+
+    // Grade ONLY when submitting
+    gradeCurrentTopicTest();
+
+    // Mark finished so next time user sees old attempt unless they click reset
+    try {
+        if (currentGradeId && currentTopicId) {
+            const state = loadAttemptState();
+            const topicAttempt = ensureTopicAttempt(state, currentGradeId, currentTopicId);
+            topicAttempt.test.finished = true;
+            saveAttemptState(state);
+        }
+    } catch {}
+
+    showQuizResultView(true);
+}
+
+function resetQuiz() {
+    clearCurrentTopicTestAttempt();
+    renderQuiz();
+}
 
 // Chatbot Logic
 function toggleChat() { 
